@@ -164,9 +164,10 @@ router.post('/confirm', requireRole('ADMIN'), async (req, res) => {
       }
       await prisma.accessory.create({
         data: {
+          code: acc.code || undefined,
           name: acc.name.trim(),
           description: acc.articleNumber ? `Art.-Nr.: ${acc.articleNumber}` : undefined,
-          hasSerialNumber: false,
+          hasSerialNumber: true,
           compatibleModels: {
             create: modelIds.map((id) => ({ machineModelId: id })),
           },

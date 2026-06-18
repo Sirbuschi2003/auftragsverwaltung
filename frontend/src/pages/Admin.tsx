@@ -394,6 +394,10 @@ function AccessoriesTab() {
           <h3 className="text-sm font-semibold text-gray-900">{isNew ? 'Neues Zubehör' : 'Zubehör bearbeiten'}</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
+              <label className="label">Bezeichnung (z.B. DESK-5005)</label>
+              <input className="input font-mono" placeholder="z.B. MR-3033" value={editing.code || ''} onChange={(e) => setEditing((p) => ({ ...p, code: e.target.value }))} />
+            </div>
+            <div>
               <label className="label">Name</label>
               <input className="input" value={editing.name || ''} onChange={(e) => setEditing((p) => ({ ...p, name: e.target.value }))} />
             </div>
@@ -451,6 +455,7 @@ function AccessoriesTab() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider w-28">Code</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Passt an</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">S/N</th>
@@ -460,6 +465,11 @@ function AccessoriesTab() {
           <tbody className="divide-y divide-gray-50">
             {items.map((item) => (
               <tr key={item.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  {item.code
+                    ? <span className="font-mono text-xs font-semibold text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded">{item.code}</span>
+                    : <span className="text-xs text-gray-300">–</span>}
+                </td>
                 <td className="px-4 py-3">
                   <p className="font-medium text-gray-900">{item.name}</p>
                   {item.description && <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>}

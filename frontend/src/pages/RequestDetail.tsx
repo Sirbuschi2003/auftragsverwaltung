@@ -145,7 +145,10 @@ function ActionPanel({ request, onUpdate }: ActionPanelProps) {
         </div>
         {snRequired.map((acc) => (
           <div key={acc.id}>
-            <label className="label">{acc.accessory.name} – Seriennummer *</label>
+            <label className="label">
+              {acc.accessory.code && <span className="font-mono text-xs text-gray-400 mr-1">{acc.accessory.code}</span>}
+              {acc.accessory.name} – Seriennummer *
+            </label>
             <input
               className="input"
               placeholder="Seriennummer eingeben"
@@ -418,7 +421,10 @@ export default function RequestDetail() {
                 {request.accessories.map((acc: RequestAccessory) => (
                   <div key={acc.id} className="flex items-center justify-between px-6 py-3">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{acc.accessory.name}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {acc.accessory.code && <span className="font-mono text-xs text-gray-400 mr-1.5">{acc.accessory.code}</span>}
+                        {acc.accessory.name}
+                      </p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs text-gray-400">× {acc.quantity}</span>
                         {acc.accessory.hasSerialNumber && (

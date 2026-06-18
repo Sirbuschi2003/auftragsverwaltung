@@ -5,6 +5,7 @@ import { api, Customer, MachineModel, Accessory, CustomerSite } from '../api/cli
 
 interface AccessorySelection {
   accessoryId: string;
+  code?: string;
   name: string;
   hasSerialNumber: boolean;
   quantity: number;
@@ -58,7 +59,7 @@ export default function NewRequest() {
     const model = models.find((m) => m.id === selectedModelId);
     const accs: Accessory[] = model?.compatibleAccessories ?? [];
     setAccessorySelections(
-      accs.map((a) => ({ accessoryId: a.id, name: a.name, hasSerialNumber: a.hasSerialNumber, quantity: 1, selected: false }))
+      accs.map((a) => ({ accessoryId: a.id, code: a.code, name: a.name, hasSerialNumber: a.hasSerialNumber, quantity: 1, selected: false }))
     );
   }, [selectedModelId, models]);
 
@@ -410,7 +411,10 @@ export default function NewRequest() {
                         className="w-4 h-4 text-brand-600 rounded border-gray-300 focus:ring-brand-500"
                         onClick={(e) => e.stopPropagation()}
                       />
-                      <span className="flex-1 text-sm text-gray-800">{acc.name}</span>
+                      <span className="flex-1 text-sm text-gray-800">
+                        {acc.code && <span className="font-mono text-xs text-gray-400 mr-2">{acc.code}</span>}
+                        {acc.name}
+                      </span>
                       {acc.hasSerialNumber && (
                         <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">S/N erforderlich</span>
                       )}
@@ -491,7 +495,10 @@ export default function NewRequest() {
                     <p className="text-sm text-gray-400">Kein Zubehör</p>
                   ) : (
                     accessorySelections.filter((a) => a.selected).map((a) => (
-                      <p key={a.accessoryId} className="text-sm text-gray-900">{a.name} × {a.quantity}</p>
+                      <p key={a.accessoryId} className="text-sm text-gray-900">
+                        {a.code && <span className="font-mono text-xs text-gray-400 mr-1">{a.code}</span>}
+                        {a.name} × {a.quantity}
+                      </p>
                     ))
                   )}
                 </div>

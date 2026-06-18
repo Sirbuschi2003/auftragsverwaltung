@@ -37,6 +37,7 @@ export interface MachineModel {
 
 export interface Accessory {
   id: string;
+  code?: string;
   name: string;
   description?: string;
   hasSerialNumber: boolean;

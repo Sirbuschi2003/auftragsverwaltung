@@ -32,9 +32,10 @@ router.get('/', requireAuth, async (req, res) => {
 
 router.post('/', requireRole('ADMIN'), async (req, res) => {
   try {
-    const { name, description, hasSerialNumber, machineModelIds = [] } = req.body;
+    const { code, name, description, hasSerialNumber, machineModelIds = [] } = req.body;
     const accessory = await prisma.accessory.create({
       data: {
+        code: code || undefined,
         name,
         description,
         hasSerialNumber: !!hasSerialNumber,
@@ -52,13 +53,14 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
 
 router.put('/:id', requireRole('ADMIN'), async (req, res) => {
   try {
-    const { name, description, hasSerialNumber, machineModelIds } = req.body;
+    const { code, name, description, hasSerialNumber, machineModelIds } = req.body;
     if (machineModelIds !== undefined) {
       await prisma.machineModelAccessory.deleteMany({ where: { accessoryId: req.params.id } });
     }
     const accessory = await prisma.accessory.update({
       where: { id: req.params.id },
       data: {
+        code: code || null,
         name,
         description,
         hasSerialNumber: !!hasSerialNumber,

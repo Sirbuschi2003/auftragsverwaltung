@@ -68,6 +68,7 @@ model MachineModel {
 
 model Accessory {
   id                 String                  @id @default(cuid())
+  code               String?
   name               String
   description        String?
   hasSerialNumber    Boolean                 @default(false)
