@@ -501,22 +501,19 @@ function AccessoriesTab() {
 
 // ─── PDF Import Tab ───────────────────────────────────────────────────────────
 interface ParsedItem { code: string; articleNumber: string; name: string; selected: boolean }
+interface ParsedModel { name: string; selected: boolean; existsAlready: boolean }
 
 function ImportTab() {
-  const [models, setModels] = useState<MachineModel[]>([]);
-  const [selectedModelIds, setSelectedModelIds] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [parsing, setParsing] = useState(false);
+  const [parsedModels, setParsedModels] = useState<ParsedModel[] | null>(null);
   const [items, setItems] = useState<ParsedItem[] | null>(null);
-  const [detectedModels, setDetectedModels] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => { api.machineModels.getAll().then(setModels); }, []);
-
-  const toggleModel = (id: string) =>
-    setSelectedModelIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  const toggleModel = (idx: number) =>
+    setParsedModels((prev) => prev ? prev.map((m, i) => i === idx ? { ...m, selected: !m.selected } : m) : null);
 
   const toggleItem = (idx: number) =>
     setItems((prev) => prev ? prev.map((it, i) => i === idx ? { ...it, selected: !it.selected } : it) : null);
@@ -530,10 +527,11 @@ function ImportTab() {
     setError('');
     setResult('');
     setItems(null);
+    setParsedModels(null);
     try {
       const data = await api.import.parsePdf(file);
+      setParsedModels(data.machineModels);
       setItems(data.accessories);
-      setDetectedModels(data.machineModels);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Fehler beim Lesen.');
     } finally {
@@ -542,13 +540,14 @@ function ImportTab() {
   };
 
   const doImport = async () => {
-    if (!items) return;
+    if (!items || !parsedModels) return;
     setImporting(true);
     setError('');
     try {
-      const res = await api.import.confirm({ accessories: items, machineModelIds: selectedModelIds });
+      const res = await api.import.confirm({ accessories: items, machineModels: parsedModels });
       setResult(res.message);
       setItems(null);
+      setParsedModels(null);
       setFile(null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Fehler beim Importieren.');
@@ -557,13 +556,14 @@ function ImportTab() {
     }
   };
 
-  const selectedCount = items?.filter((i) => i.selected).length ?? 0;
+  const selectedAccCount = items?.filter((i) => i.selected).length ?? 0;
+  const selectedModCount = parsedModels?.filter((m) => m.selected).length ?? 0;
 
   return (
     <div className="space-y-5">
       <div>
         <h2 className="text-sm font-semibold text-gray-900">Hersteller-PDF importieren</h2>
-        <p className="text-xs text-gray-500 mt-0.5">Zubehör wird automatisch aus dem Konfigurationsdokument ausgelesen. Verbrauchsmaterialien (Toner, Entwickler, Trommel) werden übersprungen.</p>
+        <p className="text-xs text-gray-500 mt-0.5">Maschinenmodelle und Zubehör werden automatisch aus dem Konfigurationsdokument ausgelesen. Verbrauchsmaterialien (Toner, Entwickler, Trommel) werden übersprungen.</p>
       </div>
 
       {result && (
@@ -573,62 +573,63 @@ function ImportTab() {
         <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">{error}</div>
       )}
 
-      {/* Step 1: select models */}
+      {/* Step 1: upload PDF */}
       <div className="card p-5 space-y-3">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Schritt 1 — Maschinenmodell(e) zuweisen</h3>
-        <p className="text-xs text-gray-500">Welche bereits angelegten Modelle passen zu diesem Zubehör?</p>
-        {models.length === 0 ? (
-          <p className="text-sm text-gray-400 italic">Noch keine Modelle angelegt.</p>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {models.map((m) => (
-              <label key={m.id} className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${
-                selectedModelIds.includes(m.id) ? 'bg-brand-50 border-brand-200' : 'bg-white border-gray-100 hover:border-gray-200'
-              }`}>
-                <input type="checkbox" checked={selectedModelIds.includes(m.id)} onChange={() => toggleModel(m.id)}
-                  className="w-4 h-4 text-brand-600 rounded border-gray-300" />
-                <span className="text-sm text-gray-800">{m.modelName}</span>
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Step 2: upload PDF */}
-      <div className="card p-5 space-y-3">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Schritt 2 — PDF hochladen</h3>
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Schritt 1 — PDF hochladen</h3>
         <div className="flex gap-3 items-center">
           <label className="flex-1">
             <input type="file" accept="application/pdf" className="hidden"
-              onChange={(e) => { setFile(e.target.files?.[0] ?? null); setItems(null); setResult(''); }} />
+              onChange={(e) => { setFile(e.target.files?.[0] ?? null); setItems(null); setParsedModels(null); setResult(''); }} />
             <div className="input cursor-pointer text-gray-500 truncate">
               {file ? file.name : 'PDF-Datei auswählen…'}
             </div>
           </label>
           <button className="btn-primary whitespace-nowrap" onClick={parsePdf} disabled={!file || parsing}>
-            {parsing ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : null}
+            {parsing ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full inline-block mr-1" /> : null}
             {parsing ? 'Lese…' : 'PDF auslesen'}
           </button>
         </div>
-        {detectedModels.length > 0 && (
-          <p className="text-xs text-gray-500">
-            Erkannte Modelle im PDF: {detectedModels.join(', ')}
-          </p>
-        )}
       </div>
 
-      {/* Step 3: preview & import */}
-      {items && (
-        <div className="card p-5 space-y-3">
-          <div className="flex items-center justify-between">
+      {/* Step 2 + 3: preview after parsing */}
+      {parsedModels && items && (
+        <div className="space-y-4">
+          {/* Machine models preview */}
+          <div className="card p-5 space-y-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Schritt 3 — Vorschau ({selectedCount} von {items.length} ausgewählt)
+              Schritt 2 — Erkannte Maschinenmodelle ({selectedModCount} von {parsedModels.length} ausgewählt)
             </h3>
-            <button className="btn-primary" onClick={doImport} disabled={importing || selectedCount === 0}>
-              {importing ? 'Importiere…' : `${selectedCount} Artikel importieren`}
-            </button>
+            {parsedModels.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">Keine Maschinenmodelle im PDF erkannt.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {parsedModels.map((m, idx) => (
+                  <label key={idx} className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                    m.selected ? 'bg-brand-50 border-brand-200' : 'bg-gray-50 border-gray-100 opacity-50'
+                  }`}>
+                    <input type="checkbox" checked={m.selected} onChange={() => toggleModel(idx)}
+                      className="w-4 h-4 text-brand-600 rounded border-gray-300" />
+                    <span className="text-sm text-gray-800 flex-1">{m.name}</span>
+                    {m.existsAlready
+                      ? <span className="text-xs text-gray-400 italic">vorhanden</span>
+                      : <span className="text-xs text-green-600 font-medium">neu</span>}
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="max-h-96 overflow-y-auto space-y-1">
+
+          {/* Accessories preview */}
+          <div className="card p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Schritt 3 — Erkanntes Zubehör ({selectedAccCount} von {items.length} ausgewählt)
+              </h3>
+              <button className="btn-primary" onClick={doImport} disabled={importing || (selectedAccCount === 0 && selectedModCount === 0)}>
+                {importing ? 'Importiere…' : 'Importieren'}
+              </button>
+            </div>
+            <div className="max-h-96 overflow-y-auto space-y-1">
             {items.map((item, idx) => (
               <div key={idx} className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${
                 item.selected ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'

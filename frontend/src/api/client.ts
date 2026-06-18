@@ -130,15 +130,20 @@ export const api = {
   },
 
   import: {
-    parsePdf: async (file: File): Promise<{ machineModels: string[]; accessories: { code: string; articleNumber: string; name: string; selected: boolean }[] }> => {
+    parsePdf: async (file: File): Promise<{
+      machineModels: { name: string; selected: boolean; existsAlready: boolean }[];
+      accessories: { code: string; articleNumber: string; name: string; selected: boolean }[];
+    }> => {
       const form = new FormData();
       form.append('pdf', file);
       const res = await fetch('/api/import/parse-pdf', { method: 'POST', credentials: 'include', body: form });
       if (!res.ok) { const e = await res.json().catch(() => ({ message: 'Fehler.' })); throw new Error(e.message); }
       return res.json();
     },
-    confirm: (data: { accessories: { code: string; articleNumber: string; name: string; selected: boolean }[]; machineModelIds: string[] }) =>
-      request<{ created: number; skipped: number; message: string }>('/import/confirm', { method: 'POST', body: JSON.stringify(data) }),
+    confirm: (data: {
+      accessories: { code: string; articleNumber: string; name: string; selected: boolean }[];
+      machineModels: { name: string; selected: boolean; existsAlready: boolean }[];
+    }) => request<{ created: number; skipped: number; newModels: number; message: string }>('/import/confirm', { method: 'POST', body: JSON.stringify(data) }),
   },
 
   machineRequests: {
