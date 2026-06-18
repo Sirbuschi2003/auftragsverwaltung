@@ -134,7 +134,9 @@ router.post('/parse-pdf', requireRole('ADMIN'), upload.single('pdf'), async (req
       existsAlready: existingNames.has(name),
     }));
 
-    res.json({ machineModels, accessories });
+    // Debug: first 1000 chars of extracted text (remove after testing)
+    const _debug = data.text.substring(0, 1500);
+    res.json({ machineModels, accessories, _debug });
   } catch (error) {
     console.error('PDF parse error:', error);
     res.status(500).json({ message: 'Fehler beim Lesen der PDF. Bitte prüfen ob es ein gültiges PDF ist.' });
