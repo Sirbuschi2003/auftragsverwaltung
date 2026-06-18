@@ -36,7 +36,14 @@ const VALID_TRANSITIONS: Record<string, RequestStatus[]> = {
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { status } = req.query;
-    const where = status ? { status: status as RequestStatus } : {};
+    const role = req.session.userRole;
+    const userId = req.session.userId;
+
+    const where: Record<string, unknown> = {};
+    if (status) where.status = status as RequestStatus;
+    // SALES sehen nur eigene Aufträge; alle anderen Rollen sehen alle
+    if (role === 'SALES') where.salesRepId = userId;
+
     const requests = await prisma.machineRequest.findMany({
       where,
       include: {
@@ -61,6 +68,9 @@ router.get('/:id', requireAuth, async (req, res) => {
       include: INCLUDE_FULL,
     });
     if (!request) return res.status(404).json({ message: 'Anfrage nicht gefunden.' });
+    if (req.session.userRole === 'SALES' && request.salesRepId !== req.session.userId) {
+      return res.status(403).json({ message: 'Keine Berechtigung.' });
+    }
     res.json(request);
   } catch (error) {
     res.status(500).json({ message: 'Interner Serverfehler.' });

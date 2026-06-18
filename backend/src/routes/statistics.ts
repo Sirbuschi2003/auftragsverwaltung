@@ -68,8 +68,10 @@ router.get('/sales-by-rep', requireRole('MANAGEMENT', 'ADMIN'), async (req, res)
 
 router.get('/summary', requireRole('MANAGEMENT', 'ADMIN', 'SALES', 'WAREHOUSE', 'TECHNICIAN'), async (req, res) => {
   try {
+    const where = req.session.userRole === 'SALES' ? { salesRepId: req.session.userId } : {};
     const counts = await prisma.machineRequest.groupBy({
       by: ['status'],
+      where,
       _count: { id: true },
     });
     const summary = counts.reduce(
