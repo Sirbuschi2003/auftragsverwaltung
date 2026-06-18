@@ -108,6 +108,26 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const existing = await prisma.machineRequest.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ message: 'Anfrage nicht gefunden.' });
+
+    const role = req.session.userRole;
+    if (role !== 'ADMIN' && existing.salesRepId !== req.session.userId) {
+      return res.status(403).json({ message: 'Keine Berechtigung.' });
+    }
+    if (existing.status !== 'DRAFT' && role !== 'ADMIN') {
+      return res.status(400).json({ message: 'Nur Entwürfe können gelöscht werden.' });
+    }
+
+    await prisma.machineRequest.delete({ where: { id: req.params.id } });
+    res.json({ message: 'Anfrage gelöscht.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Interner Serverfehler.' });
+  }
+});
+
 router.patch('/:id', requireAuth, async (req, res) => {
   try {
     const { notes, machineModelId, customerSiteId, accessories } = req.body;

@@ -141,6 +141,7 @@ export const api = {
     }) => request<MachineRequest>('/machine-requests', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Record<string, unknown>) =>
       request<MachineRequest>(`/machine-requests/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => request<void>(`/machine-requests/${id}`, { method: 'DELETE' }),
     transition: (
       id: string,
       data: {

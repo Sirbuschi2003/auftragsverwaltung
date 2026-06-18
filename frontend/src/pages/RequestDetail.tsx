@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, CheckCircle, Clock, Package, Wrench, AlertTriangle,
-  ChevronRight, ExternalLink,
+  ChevronRight, ExternalLink, Trash2,
 } from 'lucide-react';
 import { api, MachineRequest, RequestStatus, RequestAccessory } from '../api/client';
 import { StatusBadge, STATUS_LABELS } from '../components/StatusBadge';
@@ -255,9 +255,12 @@ function ActionPanel({ request, onUpdate }: ActionPanelProps) {
 export default function RequestDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [request, setRequest] = useState<MachineRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -272,6 +275,20 @@ export default function RequestDetail() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleDelete = async () => {
+    if (!request) return;
+    setDeleting(true);
+    try {
+      await api.machineRequests.delete(request.id);
+      navigate('/');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Fehler beim Löschen.');
+      setConfirmDelete(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -289,8 +306,28 @@ export default function RequestDetail() {
     );
   }
 
+  const canDelete = user && (user.role === 'ADMIN' || (request.status === 'DRAFT' && request.salesRep.id === user.id));
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
+      {/* Delete confirmation dialog */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <p className="text-sm font-semibold text-gray-900 mb-1">Auftrag löschen?</p>
+            <p className="text-sm text-gray-500 mb-5">
+              <span className="font-mono font-bold text-brand-600">{request.requestNumber}</span> wird unwiderruflich gelöscht.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button className="btn-secondary" onClick={() => setConfirmDelete(false)}>Abbrechen</button>
+              <button className="btn-danger" onClick={handleDelete} disabled={deleting}>
+                {deleting ? 'Lösche…' : 'Löschen'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start gap-3">
         <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 transition-colors mt-1">
@@ -306,9 +343,20 @@ export default function RequestDetail() {
           <h1 className="text-2xl font-bold text-gray-900 mt-1">{request.customer.companyName}</h1>
           <p className="text-sm text-gray-500">{request.machineModel.modelName}</p>
         </div>
-        <div className="text-right text-xs text-gray-400">
-          <p>Erstellt {new Date(request.createdAt).toLocaleDateString('de-DE')}</p>
-          <p>von {request.salesRep.name}</p>
+        <div className="flex items-start gap-3">
+          {canDelete && (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="text-gray-400 hover:text-red-500 transition-colors p-1 mt-0.5"
+              title="Auftrag löschen"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+          <div className="text-right text-xs text-gray-400">
+            <p>Erstellt {new Date(request.createdAt).toLocaleDateString('de-DE')}</p>
+            <p>von {request.salesRep.name}</p>
+          </div>
         </div>
       </div>
 
