@@ -7,7 +7,7 @@ type PdfParseFunc = (buf: Buffer) => Promise<{ text: string }>;
 let _pdfParse: PdfParseFunc | null = null;
 function getPdfParse(): PdfParseFunc {
   if (!_pdfParse) {
-    // pdf-parse index.js runs self-tests on require — use internal path to skip that
+    // pdf-parse v1: index.js runs self-tests on require, use internal path to skip
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     _pdfParse = require('pdf-parse/lib/pdf-parse.js') as PdfParseFunc;
   }
