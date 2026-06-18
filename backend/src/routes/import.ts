@@ -64,8 +64,9 @@ function extractMachineModels(text: string): string[] {
 function parseAccessories(text: string): ParsedItem[] {
   // pdf-parse extracts table cells WITHOUT spaces between columns:
   // "KA-5005PC6AG00006726Vorlagenglasabdeckung"
-  // Toshiba article numbers always start with "6" + 10 alphanumeric chars
-  const ITEM_RE = /\b([A-Z]{2,5}(?:-[A-Z0-9]+)+)(6[A-Z0-9]{9,11})([^\n]{2,120})/g;
+  // Toshiba article numbers start with "6", always END with a digit → use that to avoid
+  // consuming the first letter of the product name (which starts with uppercase)
+  const ITEM_RE = /\b([A-Z]{2,5}(?:-[A-Z0-9]+)+)(6[A-Z0-9]{8,10}[0-9])([^\n]{2,120})/g;
   const TRIM_RE = /[,;]?\s*\d[\d\s]*\s*(x\s*\d|mm|cm|kg|Blatt|Umschläge|Ablagen|Kapazität|g\/m).*/i;
 
   const accessories: ParsedItem[] = [];
@@ -114,9 +115,7 @@ router.post('/parse-pdf', requireRole('ADMIN'), upload.single('pdf'), async (req
       existsAlready: existingNames.has(name),
     }));
 
-    // Debug: first 1000 chars of extracted text (remove after testing)
-    const _debug = data.text.substring(0, 1500);
-    res.json({ machineModels, accessories, _debug });
+    res.json({ machineModels, accessories });
   } catch (error) {
     console.error('PDF parse error:', error);
     res.status(500).json({ message: 'Fehler beim Lesen der PDF. Bitte prüfen ob es ein gültiges PDF ist.' });
