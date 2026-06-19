@@ -7,7 +7,7 @@ export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -23,7 +23,7 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(username, password);
       navigate('/');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Anmeldung fehlgeschlagen.');
@@ -61,8 +61,8 @@ export default function Login() {
                 type="text"
                 className="input"
                 placeholder="Benutzername"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
                 autoFocus
               />

@@ -7,12 +7,12 @@ const router = Router();
 
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: 'E-Mail und Passwort erforderlich.' });
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Benutzername und Passwort erforderlich.' });
     }
 
-    const user = await prisma.salesRep.findUnique({ where: { email } });
+    const user = await prisma.salesRep.findUnique({ where: { username } });
     if (!user) {
       return res.status(401).json({ message: 'Ungültige Anmeldedaten.' });
     }

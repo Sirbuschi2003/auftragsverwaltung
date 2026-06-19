@@ -42,12 +42,15 @@ function UsersTab() {
     if (!editing) return;
     setError('');
     try {
+      const e = editing as any;
       if (isNew) {
         await api.salesReps.create({
-          name: editing.name!,
-          email: editing.email!,
-          password: editing.password!,
-          role: editing.role!,
+          username: e.username,
+          firstName: e.firstName,
+          lastName: e.lastName,
+          email: e.email,
+          password: e.password,
+          role: e.role,
         });
       } else {
         await api.salesReps.update(editing.id!, editing);
@@ -97,11 +100,19 @@ function UsersTab() {
           <h3 className="text-sm font-semibold text-gray-900">{isNew ? 'Neuer Benutzer' : 'Benutzer bearbeiten'}</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Name</label>
-              <input className="input" value={editing.name || ''} onChange={(e) => setEditing((p) => ({ ...p, name: e.target.value }))} />
+              <label className="label">Vorname</label>
+              <input className="input" value={(editing as any).firstName || ''} onChange={(e) => setEditing((p) => ({ ...p, firstName: e.target.value }))} />
             </div>
             <div>
-              <label className="label">E-Mail</label>
+              <label className="label">Nachname</label>
+              <input className="input" value={(editing as any).lastName || ''} onChange={(e) => setEditing((p) => ({ ...p, lastName: e.target.value }))} />
+            </div>
+            <div>
+              <label className="label">Benutzername (Login)</label>
+              <input className="input" value={(editing as any).username || ''} onChange={(e) => setEditing((p) => ({ ...p, username: e.target.value }))} />
+            </div>
+            <div>
+              <label className="label">E-Mail (optional)</label>
               <input className="input" type="email" value={editing.email || ''} onChange={(e) => setEditing((p) => ({ ...p, email: e.target.value }))} />
             </div>
             <div>
@@ -130,6 +141,7 @@ function UsersTab() {
           <thead className="bg-gray-50">
             <tr>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Benutzername</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">E-Mail</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Rolle</th>
               <th className="w-20" />
@@ -138,8 +150,9 @@ function UsersTab() {
           <tbody className="divide-y divide-gray-50">
             {users.map((u) => (
               <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 font-medium text-gray-900">{u.name}</td>
-                <td className="px-4 py-3 text-gray-500">{u.email}</td>
+                <td className="px-4 py-3 font-medium text-gray-900">{(u as any).firstName} {(u as any).lastName}</td>
+                <td className="px-4 py-3 text-gray-500 font-mono text-xs">{(u as any).username}</td>
+                <td className="px-4 py-3 text-gray-500 text-xs">{u.email || '—'}</td>
                 <td className="px-4 py-3">
                   <span className="text-xs bg-brand-50 text-brand-700 px-2 py-0.5 rounded-full font-medium">
                     {ROLE_LABELS[u.role]}

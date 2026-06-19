@@ -26,8 +26,11 @@ enum RequestStatus {
 
 model SalesRep {
   id              String           @id @default(cuid())
+  username        String?          @unique
+  firstName       String?
+  lastName        String?
   name            String
-  email           String           @unique
+  email           String?
   passwordHash    String
   role            Role
   createdAt       DateTime         @default(now())

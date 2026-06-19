@@ -3,8 +3,11 @@ export type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'IN_WAREHOUSE' | 'UNPACKING'
 
 export interface User {
   id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
   name: string;
-  email: string;
+  email?: string;
   role: Role;
 }
 
@@ -94,8 +97,8 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   auth: {
-    login: (email: string, password: string) =>
-      request<User>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+    login: (username: string, password: string) =>
+      request<User>('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
     logout: () => request<void>('/auth/logout', { method: 'POST' }),
     me: () => request<User>('/auth/me'),
   },
@@ -176,7 +179,7 @@ export const api = {
 
   salesReps: {
     getAll: () => request<(User & { createdAt: string })[]>('/sales-reps'),
-    create: (data: { name: string; email: string; password: string; role: Role }) =>
+    create: (data: { username: string; firstName: string; lastName: string; email?: string; password: string; role: Role }) =>
       request<User>('/sales-reps', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<User> & { password?: string }) =>
       request<User>(`/sales-reps/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
