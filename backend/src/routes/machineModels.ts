@@ -37,9 +37,10 @@ router.get('/', requireAuth, async (req, res) => {
 
 router.post('/', requireRole('ADMIN', 'MANAGEMENT'), async (req, res) => {
   try {
-    const { modelName, description, accessoryIds = [] } = req.body;
+    const { manufacturer, modelName, description, accessoryIds = [] } = req.body;
     const model = await prisma.machineModel.create({
       data: {
+        manufacturer: manufacturer || null,
         modelName,
         description,
         compatibleAccessories: {
@@ -56,13 +57,14 @@ router.post('/', requireRole('ADMIN', 'MANAGEMENT'), async (req, res) => {
 
 router.put('/:id', requireRole('ADMIN', 'MANAGEMENT'), async (req, res) => {
   try {
-    const { modelName, description, accessoryIds } = req.body;
+    const { manufacturer, modelName, description, accessoryIds } = req.body;
     if (accessoryIds !== undefined) {
       await prisma.machineModelAccessory.deleteMany({ where: { machineModelId: req.params.id } });
     }
     const model = await prisma.machineModel.update({
       where: { id: req.params.id },
       data: {
+        manufacturer: manufacturer !== undefined ? (manufacturer || null) : undefined,
         modelName,
         description,
         ...(accessoryIds !== undefined && {

@@ -33,14 +33,17 @@ export interface Customer {
 
 export interface MachineModel {
   id: string;
+  manufacturer?: string;
   modelName: string;
   description?: string;
   imagePath?: string;
+  manufacturerLogoPath?: string;
   compatibleAccessories?: Accessory[];
 }
 
 export interface Accessory {
   id: string;
+  manufacturer?: string;
   code?: string;
   name: string;
   description?: string;
@@ -137,7 +140,8 @@ export const api = {
 
   import: {
     parsePdf: async (file: File): Promise<{
-      machineModels: { name: string; selected: boolean; existsAlready: boolean }[];
+      manufacturer: string;
+      machineModels: { name: string; manufacturer: string; selected: boolean; existsAlready: boolean }[];
       accessories: { code: string; articleNumber: string; name: string; selected: boolean }[];
     }> => {
       const form = new FormData();
@@ -148,7 +152,7 @@ export const api = {
     },
     confirm: (data: {
       accessories: { code: string; articleNumber: string; name: string; selected: boolean }[];
-      machineModels: { name: string; selected: boolean; existsAlready: boolean }[];
+      machineModels: { name: string; manufacturer: string; selected: boolean; existsAlready: boolean }[];
     }) => request<{ created: number; skipped: number; newModels: number; message: string }>('/import/confirm', { method: 'POST', body: JSON.stringify(data) }),
   },
 
@@ -201,6 +205,13 @@ export const api = {
   },
 
   uploads: {
+    machineModelLogo: async (id: string, file: File): Promise<{ manufacturerLogoPath: string }> => {
+      const form = new FormData();
+      form.append('image', file);
+      const res = await fetch(`/api/uploads/machine-model/${id}/logo`, { method: 'POST', credentials: 'include', body: form });
+      if (!res.ok) { const e = await res.json().catch(() => ({ message: 'Fehler.' })); throw new Error(e.message); }
+      return res.json();
+    },
     machineModel: async (id: string, file: File): Promise<{ imagePath: string }> => {
       const form = new FormData();
       form.append('image', file);

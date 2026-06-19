@@ -63,15 +63,18 @@ model CustomerSite {
 
 model MachineModel {
   id                    String                  @id @default(cuid())
+  manufacturer          String?
   modelName             String
   description           String?
   imagePath             String?
+  manufacturerLogoPath  String?
   compatibleAccessories MachineModelAccessory[]
   machineRequests       MachineRequest[]
 }
 
 model Accessory {
   id                 String                  @id @default(cuid())
+  manufacturer       String?
   code               String?
   name               String
   description        String?

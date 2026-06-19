@@ -55,6 +55,24 @@ router.post('/machine-model/:id', requireRole('ADMIN'), upload.single('image'), 
   }
 });
 
+// POST /api/uploads/machine-model/:id/logo
+router.post('/machine-model/:id/logo', requireRole('ADMIN'), upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ message: 'Keine Datei hochgeladen.' });
+      return;
+    }
+    const manufacturerLogoPath = `/api/uploads/files/${req.file.filename}`;
+    await prisma.machineModel.update({
+      where: { id: req.params.id },
+      data: { manufacturerLogoPath },
+    });
+    res.json({ manufacturerLogoPath });
+  } catch (e: unknown) {
+    res.status(500).json({ message: e instanceof Error ? e.message : 'Fehler beim Hochladen.' });
+  }
+});
+
 // POST /api/uploads/accessory/:id
 router.post('/accessory/:id', requireRole('ADMIN'), upload.single('image'), async (req, res) => {
   try {

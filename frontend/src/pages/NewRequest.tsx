@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, CheckCircle, AlertCircle, ArrowLeft, Plus, Minus, UserPlus } from 'lucide-react';
+import { Search, CheckCircle, AlertCircle, ArrowLeft, Plus, Minus, UserPlus, Cpu, Check } from 'lucide-react';
 import { api, Customer, MachineModel, Accessory, CustomerSite } from '../api/client';
 
 interface AccessorySelection {
@@ -42,6 +42,8 @@ export default function NewRequest() {
   const [selectedModelId, setSelectedModelId] = useState('');
   const [accessorySelections, setAccessorySelections] = useState<AccessorySelection[]>([]);
   const [notes, setNotes] = useState('');
+  const [modelSearch, setModelSearch] = useState('');
+  const [accSearch, setAccSearch] = useState('');
 
   // Submit
   const [submitting, setSubmitting] = useState(false);
@@ -167,6 +169,24 @@ export default function NewRequest() {
   };
 
   const selectedModel = models.find((m) => m.id === selectedModelId);
+
+  const filteredModels = useMemo(() => {
+    const q = modelSearch.trim().toLowerCase();
+    if (!q) return models;
+    return models.filter((m) =>
+      m.modelName.toLowerCase().includes(q) ||
+      (m.manufacturer ?? '').toLowerCase().includes(q) ||
+      (m.description ?? '').toLowerCase().includes(q)
+    );
+  }, [models, modelSearch]);
+
+  const filteredAccs = useMemo(() => {
+    const q = accSearch.trim().toLowerCase();
+    if (!q) return accessorySelections;
+    return accessorySelections.filter((a) =>
+      a.name.toLowerCase().includes(q) || (a.code ?? '').toLowerCase().includes(q)
+    );
+  }, [accessorySelections, accSearch]);
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -366,77 +386,160 @@ export default function NewRequest() {
       {/* ── Step 2: Machine & Accessories ──────────────────────────────── */}
       {step === 'machine' && (
         <div className="space-y-4">
+          {/* Machine model cards */}
           <div className="card">
             <div className="card-header">
               <h2 className="text-base font-semibold text-gray-900">Maschinenmodell</h2>
             </div>
-            <div className="card-body">
-              <select className="input" value={selectedModelId} onChange={(e) => setSelectedModelId(e.target.value)}>
-                <option value="">Modell auswählen…</option>
-                {models.map((m) => (
-                  <option key={m.id} value={m.id}>{m.modelName}</option>
-                ))}
-              </select>
-              {selectedModel?.description && (
-                <p className="mt-2 text-sm text-gray-500">{selectedModel.description}</p>
+            <div className="card-body space-y-3">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <input
+                  className="input pl-9"
+                  placeholder="Modell oder Hersteller suchen…"
+                  value={modelSearch}
+                  onChange={(e) => setModelSearch(e.target.value)}
+                />
+              </div>
+
+              {/* Cards grid */}
+              {filteredModels.length === 0 ? (
+                <p className="text-sm text-gray-400 italic py-4 text-center">Keine Modelle gefunden.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {filteredModels.map((m) => (
+                    <div
+                      key={m.id}
+                      onClick={() => setSelectedModelId(m.id)}
+                      className={`relative cursor-pointer rounded-xl border-2 p-3 transition-all select-none ${
+                        selectedModelId === m.id
+                          ? 'border-brand-500 bg-brand-50 shadow-sm'
+                          : 'border-gray-100 bg-white hover:border-gray-300 hover:shadow-sm'
+                      }`}
+                    >
+                      {/* Selected checkmark */}
+                      {selectedModelId === m.id && (
+                        <div className="absolute top-2 left-2 w-5 h-5 bg-brand-600 rounded-full flex items-center justify-center z-10">
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                      {/* Manufacturer logo */}
+                      {m.manufacturerLogoPath && (
+                        <img src={m.manufacturerLogoPath} alt="" className="absolute top-2 right-2 h-5 object-contain max-w-[60px]" />
+                      )}
+                      {/* Product image */}
+                      <div className="flex items-center justify-center h-24 mb-2 mt-1">
+                        {m.imagePath ? (
+                          <img src={m.imagePath} alt={m.modelName} className="max-h-24 max-w-full object-contain" />
+                        ) : (
+                          <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <Cpu className="w-7 h-7 text-gray-300" />
+                          </div>
+                        )}
+                      </div>
+                      {m.manufacturer && (
+                        <p className="text-xs text-gray-400 text-center mb-0.5">{m.manufacturer}</p>
+                      )}
+                      <p className="text-sm font-semibold text-gray-900 text-center leading-tight">{m.modelName}</p>
+                      {m.description && (
+                        <p className="text-xs text-gray-400 text-center mt-0.5 line-clamp-2">{m.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
 
+          {/* Accessories */}
           {selectedModelId && (
             <div className="card">
               <div className="card-header">
                 <h2 className="text-base font-semibold text-gray-900">Zubehör</h2>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  Nur kompatibles Zubehör für <span className="font-medium">{selectedModel?.modelName}</span>
+                  Kompatibel mit <span className="font-medium">{selectedModel?.modelName}</span>
                 </p>
               </div>
-              <div className="card-body space-y-2">
+              <div className="card-body space-y-3">
                 {accessorySelections.length === 0 ? (
-                  <p className="text-sm text-gray-400 italic">
-                    Für dieses Modell ist kein Zubehör hinterlegt.
-                  </p>
+                  <p className="text-sm text-gray-400 italic">Für dieses Modell ist kein Zubehör hinterlegt.</p>
                 ) : (
-                  accessorySelections.map((acc, idx) => (
-                    <div
-                      key={acc.accessoryId}
-                      className={`flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${
-                        acc.selected ? 'bg-brand-50 border-brand-200' : 'bg-white border-gray-100 hover:border-gray-200'
-                      }`}
-                      onClick={() => toggleAccessory(idx)}
-                    >
+                  <>
+                    {/* Accessory search */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                       <input
-                        type="checkbox"
-                        checked={acc.selected}
-                        onChange={() => toggleAccessory(idx)}
-                        className="w-4 h-4 text-brand-600 rounded border-gray-300 focus:ring-brand-500"
-                        onClick={(e) => e.stopPropagation()}
+                        className="input pl-9"
+                        placeholder="Zubehör suchen…"
+                        value={accSearch}
+                        onChange={(e) => setAccSearch(e.target.value)}
                       />
-                      {acc.imagePath && (
-                        <img src={acc.imagePath} alt="" className="w-10 h-10 object-contain rounded flex-shrink-0" />
-                      )}
-                      <span className="flex-1 text-sm text-gray-800">
-                        {acc.code && <span className="font-mono text-xs text-gray-400 mr-2">{acc.code}</span>}
-                        {acc.name}
-                      </span>
-                      {acc.hasSerialNumber && (
-                        <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">S/N erforderlich</span>
-                      )}
-                      {acc.selected && (
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => changeQty(idx, -1)}
-                            className="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50">
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="w-6 text-center text-sm font-medium">{acc.quantity}</span>
-                          <button onClick={() => changeQty(idx, 1)}
-                            className="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50">
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )}
                     </div>
-                  ))
+
+                    {filteredAccs.length === 0 ? (
+                      <p className="text-sm text-gray-400 italic text-center py-4">Keine Treffer.</p>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {filteredAccs.map((acc) => {
+                          const idx = accessorySelections.findIndex((a) => a.accessoryId === acc.accessoryId);
+                          return (
+                            <div
+                              key={acc.accessoryId}
+                              onClick={() => toggleAccessory(idx)}
+                              className={`relative cursor-pointer rounded-xl border-2 p-3 transition-all select-none ${
+                                acc.selected
+                                  ? 'border-brand-500 bg-brand-50 shadow-sm'
+                                  : 'border-gray-100 bg-white hover:border-gray-300 hover:shadow-sm'
+                              }`}
+                            >
+                              {acc.selected && (
+                                <div className="absolute top-2 left-2 w-5 h-5 bg-brand-600 rounded-full flex items-center justify-center z-10">
+                                  <Check className="w-3 h-3 text-white" />
+                                </div>
+                              )}
+                              {/* Image */}
+                              <div className="flex items-center justify-center h-16 mb-2">
+                                {acc.imagePath ? (
+                                  <img src={acc.imagePath} alt={acc.name} className="max-h-16 max-w-full object-contain" />
+                                ) : (
+                                  <div className="w-10 h-10 bg-gray-100 rounded-lg" />
+                                )}
+                              </div>
+                              {acc.code && (
+                                <p className="font-mono text-xs text-gray-400 text-center mb-0.5">{acc.code}</p>
+                              )}
+                              <p className="text-xs font-semibold text-gray-900 text-center leading-tight">{acc.name}</p>
+                              {acc.hasSerialNumber && (
+                                <p className="text-xs text-purple-500 text-center mt-0.5">S/N erforderlich</p>
+                              )}
+                              {/* Quantity control */}
+                              {acc.selected && (
+                                <div
+                                  className="flex items-center justify-center gap-2 mt-2"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <button
+                                    onClick={() => changeQty(idx, -1)}
+                                    className="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </button>
+                                  <span className="text-sm font-semibold w-5 text-center">{acc.quantity}</span>
+                                  <button
+                                    onClick={() => changeQty(idx, 1)}
+                                    className="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

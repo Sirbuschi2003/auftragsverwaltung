@@ -250,9 +250,15 @@ function ModelsTab() {
       {editing && (
         <div className="card p-5 space-y-4">
           <h3 className="text-sm font-semibold text-gray-900">{isNew ? 'Neues Modell' : 'Modell bearbeiten'}</h3>
-          <div>
-            <label className="label">Modellname</label>
-            <input className="input" value={editing.modelName || ''} onChange={(e) => setEditing((p) => ({ ...p, modelName: e.target.value }))} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">Hersteller</label>
+              <input className="input" placeholder="z.B. Toshiba, Ricoh…" value={(editing as any).manufacturer || ''} onChange={(e) => setEditing((p) => ({ ...p, manufacturer: e.target.value }))} />
+            </div>
+            <div>
+              <label className="label">Modellname</label>
+              <input className="input" value={editing.modelName || ''} onChange={(e) => setEditing((p) => ({ ...p, modelName: e.target.value }))} />
+            </div>
           </div>
           <div>
             <label className="label">Beschreibung</label>
@@ -291,22 +297,39 @@ function ModelsTab() {
             )}
           </div>
 
-          {/* Image upload — only shown when editing existing model */}
+          {/* Image uploads — only shown when editing existing model */}
           {!isNew && editing.id && (
-            <div>
-              <label className="label">Produktbild</label>
-              {editing.imagePath && (
-                <img src={editing.imagePath} alt="" className="w-24 h-24 object-contain rounded-lg border mb-2" />
-              )}
-              <input type="file" accept="image/*" className="text-sm text-gray-600" onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file || !editing.id) return;
-                try {
-                  const { imagePath } = await api.uploads.machineModel(editing.id, file);
-                  setEditing((p) => p ? { ...p, imagePath } : p);
-                  load();
-                } catch {}
-              }} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Produktbild</label>
+                {editing.imagePath && (
+                  <img src={editing.imagePath} alt="" className="w-24 h-24 object-contain rounded-lg border mb-2" />
+                )}
+                <input type="file" accept="image/*" className="text-sm text-gray-600" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !editing.id) return;
+                  try {
+                    const { imagePath } = await api.uploads.machineModel(editing.id, file);
+                    setEditing((p) => p ? { ...p, imagePath } : p);
+                    load();
+                  } catch {}
+                }} />
+              </div>
+              <div>
+                <label className="label">Hersteller-Logo</label>
+                {(editing as any).manufacturerLogoPath && (
+                  <img src={(editing as any).manufacturerLogoPath} alt="" className="h-10 object-contain rounded-lg border mb-2" />
+                )}
+                <input type="file" accept="image/*" className="text-sm text-gray-600" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !editing.id) return;
+                  try {
+                    const { manufacturerLogoPath } = await api.uploads.machineModelLogo(editing.id, file);
+                    setEditing((p) => p ? { ...p, manufacturerLogoPath } : p);
+                    load();
+                  } catch {}
+                }} />
+              </div>
             </div>
           )}
 
@@ -574,12 +597,13 @@ function AccessoriesTab() {
 
 // ─── PDF Import Tab ───────────────────────────────────────────────────────────
 interface ParsedItem { code: string; articleNumber: string; name: string; selected: boolean }
-interface ParsedModel { name: string; selected: boolean; existsAlready: boolean }
+interface ParsedModel { name: string; manufacturer: string; selected: boolean; existsAlready: boolean }
 
 function ImportTab() {
   const [file, setFile] = useState<File | null>(null);
   const [parsing, setParsing] = useState(false);
   const [parsedModels, setParsedModels] = useState<ParsedModel[] | null>(null);
+  const [detectedManufacturer, setDetectedManufacturer] = useState('');
   const [items, setItems] = useState<ParsedItem[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState('');
@@ -603,6 +627,7 @@ function ImportTab() {
     setParsedModels(null);
     try {
       const data = await api.import.parsePdf(file);
+      setDetectedManufacturer(data.manufacturer);
       setParsedModels(data.machineModels);
       setItems(data.accessories);
     } catch (e: unknown) {
@@ -669,9 +694,16 @@ function ImportTab() {
         <div className="space-y-4">
           {/* Machine models preview */}
           <div className="card p-5 space-y-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Schritt 2 — Erkannte Maschinenmodelle ({selectedModCount} von {parsedModels.length} ausgewählt)
-            </h3>
+            <div className="flex items-center gap-3">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex-1">
+                Schritt 2 — Erkannte Maschinenmodelle ({selectedModCount} von {parsedModels.length} ausgewählt)
+              </h3>
+              {detectedManufacturer && (
+                <span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-1 rounded-full">
+                  Hersteller: {detectedManufacturer}
+                </span>
+              )}
+            </div>
             {parsedModels.length === 0 ? (
               <p className="text-sm text-gray-400 italic">Keine Maschinenmodelle im PDF erkannt.</p>
             ) : (
