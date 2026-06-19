@@ -70,8 +70,8 @@ function extractModels(text: string, manufacturer: string): string[] {
       break;
     }
     case 'Utax': {
-      // Models: 3506ci, 4006ci, 6006ci, P-4530 MFP, CD 5540, etc.
-      const re = /\bP-\d{4,5}(?:\s*MFP)?\b|\b(?:CD|CS|LP|PC)\s+\d{4,5}\b|\b\d{4,5}(?:ci|i|c)\b/gi;
+      // Models: P-4020DN, P-4020DW, P-4021DN, P-C3062DN, P-C3562DN, P-C4072DN, 3506ci, 4006ci etc.
+      const re = /\bP-C?\d{3,5}[A-Z]{1,3}\b|\b(?:CD|CS|LP|PC|DC|TASKalfa)\s+\d{4,5}[a-z]{0,2}\b|\b\d{4,5}(?:ci|i|c)\b/gi;
       while ((m = re.exec(text)) !== null) add(m[0].replace(/\s+/g, ' '));
       break;
     }
@@ -123,36 +123,39 @@ function parseToshibaAccessories(text: string): ParsedItem[] {
 }
 
 function parseUtaxAccessories(text: string): ParsedItem[] {
-  // Utax codes: BK-5570, TK-5570K, DC-6520, PK-5012, DV-5230K, MK-5230
-  // Article numbers: 1T02NR0UT0, 1T02YK0UT0 (12-14 chars starting with 1T)
-  const ITEM_RE = /\b([A-Z]{2,3}-\d{4,5}[A-Z]?)\s*(1T[A-Z0-9]{8,12})\s*([^\n]{2,120})/g;
+  // Brochure PDFs: PF-1100, UG-33, IB-50, HD-6, IB-36, UG-50 etc.
+  // Spec sheets: article numbers start with 1T...
   const accessories: ParsedItem[] = [];
   const seen = new Set<string>();
   let m: RegExpExecArray | null;
-  while ((m = ITEM_RE.exec(text)) !== null) {
+
+  // Try spec-sheet format first (codes with 1T article numbers)
+  const SPEC_RE = /\b([A-Z]{2,3}-\d{1,5}[A-Z]?)\s*(1T[A-Z0-9]{8,12})\s*([^\n]{2,120})/g;
+  while ((m = SPEC_RE.exec(text)) !== null) {
     const [, code, articleNumber, rawName] = m;
     if (seen.has(code)) continue;
-    let name = rawName.trim().replace(/[,;]\s*$/, '').trim();
+    const name = rawName.trim().replace(/[,;]\s*$/, '').trim();
     if (!name || name.length < 2) continue;
-    const lower = name.toLowerCase();
-    if (CONSUMABLE_KEYWORDS.some((kw) => lower.includes(kw))) continue;
+    if (CONSUMABLE_KEYWORDS.some((kw) => name.toLowerCase().includes(kw))) continue;
     seen.add(code);
     accessories.push({ code, articleNumber, name, selected: true });
   }
-  // Fallback: code alone without article number
-  if (accessories.length === 0) {
-    const CODE_RE = /\b([A-Z]{2,3}-\d{4,5}[A-Z]?)\s+([^\n]{3,80})/g;
-    while ((m = CODE_RE.exec(text)) !== null) {
-      const [, code, rawName] = m;
-      if (seen.has(code)) continue;
-      let name = rawName.trim().replace(/[,;]\s*$/, '').trim();
-      if (!name || name.length < 2) continue;
-      const lower = name.toLowerCase();
-      if (CONSUMABLE_KEYWORDS.some((kw) => lower.includes(kw))) continue;
-      seen.add(code);
-      accessories.push({ code, articleNumber: '', name, selected: true });
-    }
+
+  // Brochure format: option codes followed by description in same line or parenthesis
+  // Matches: PF-1100 (250 Blatt...), UG-33 ThinPrint Kit, IB-50 Ethernet Karte, HD-6 SSD
+  const BROCHURE_RE = /\b([A-Z]{2,3}-\d{1,5}[A-Z]?)\s*(?:\(([^)]{3,80})\)|([^\n,;(]{3,80}))/g;
+  while ((m = BROCHURE_RE.exec(text)) !== null) {
+    const [, code, inParen, afterCode] = m;
+    if (seen.has(code)) continue;
+    const rawName = (inParen || afterCode || '').trim().replace(/[,;]\s*$/, '').trim();
+    if (!rawName || rawName.length < 2) continue;
+    if (CONSUMABLE_KEYWORDS.some((kw) => rawName.toLowerCase().includes(kw))) continue;
+    // Avoid matching model names like P-4020DN → "S/W-Drucker"
+    if (/^[A-Z]-?\d/.test(code) && code.length > 6) continue;
+    seen.add(code);
+    accessories.push({ code, articleNumber: '', name: rawName, selected: true });
   }
+
   return accessories;
 }
 

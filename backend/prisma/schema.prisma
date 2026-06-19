@@ -57,6 +57,8 @@ model CustomerSite {
   zip             String
   city            String
   country         String           @default("Deutschland")
+  contactPerson   String?
+  notes           String?
   isPrimary       Boolean          @default(false)
   machineRequests MachineRequest[]
 }

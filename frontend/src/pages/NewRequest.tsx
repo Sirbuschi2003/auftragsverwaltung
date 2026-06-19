@@ -27,6 +27,9 @@ export default function NewRequest() {
   const [selectedSiteId, setSelectedSiteId] = useState('');
   const [editedSite, setEditedSite] = useState<Partial<CustomerSite>>({});
   const [editingAddress, setEditingAddress] = useState(false);
+  const [addingSite, setAddingSite] = useState(false);
+  const [newSite, setNewSite] = useState({ siteName: '', street: '', zip: '', city: '', contactPerson: '', notes: '' });
+  const [addSiteError, setAddSiteError] = useState('');
 
   // Inline customer creation
   const [creatingCustomer, setCreatingCustomer] = useState(false);
@@ -122,6 +125,31 @@ export default function NewRequest() {
     const site = customer?.sites.find((s) => s.id === siteId);
     if (site) setEditedSite({ ...site });
     setEditingAddress(false);
+    setAddingSite(false);
+  };
+
+  const handleAddSite = async () => {
+    if (!customer) return;
+    if (!newSite.siteName.trim() || !newSite.street.trim() || !newSite.zip.trim() || !newSite.city.trim()) {
+      setAddSiteError('Standortname, Straße, PLZ und Ort sind Pflichtfelder.');
+      return;
+    }
+    setAddSiteError('');
+    try {
+      const site = await api.customers.createSite(customer.id, {
+        ...newSite,
+        country: 'Deutschland',
+        isPrimary: customer.sites.length === 0,
+      });
+      const refreshed = await api.customers.lookup(customer.customerNumber);
+      setCustomer(refreshed);
+      setSelectedSiteId(site.id);
+      setEditedSite({ ...site });
+      setAddingSite(false);
+      setNewSite({ siteName: '', street: '', zip: '', city: '', contactPerson: '', notes: '' });
+    } catch (e: unknown) {
+      setAddSiteError(e instanceof Error ? e.message : 'Fehler beim Anlegen.');
+    }
   };
 
   const toggleAccessory = (idx: number) => {
@@ -331,46 +359,101 @@ export default function NewRequest() {
                   </div>
                 </div>
 
-                {customer.sites.length > 1 && (
-                  <div>
-                    <label className="label">Lieferstandort</label>
-                    <select className="input" value={selectedSiteId} onChange={(e) => handleSiteSelect(e.target.value)}>
-                      {customer.sites.map((site) => (
-                        <option key={site.id} value={site.id}>
-                          {site.siteName} – {site.city} {site.isPrimary ? '(Hauptsitz)' : ''}
-                        </option>
-                      ))}
-                    </select>
+                {/* Site selection — always visible */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="label mb-0">Lieferstandort auswählen</label>
+                    <button className="text-xs text-brand-600 hover:underline flex items-center gap-1" onClick={() => { setAddingSite(true); setEditingAddress(false); }}>
+                      <Plus className="w-3 h-3" /> Neuer Standort
+                    </button>
                   </div>
-                )}
 
-                <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
-                  <p className="text-sm font-semibold text-amber-900 mb-2">Ist die Lieferadresse noch aktuell?</p>
-                  {!editingAddress ? (
-                    <>
-                      <p className="text-sm text-amber-800">
-                        {editedSite.street}, {editedSite.zip} {editedSite.city}, {editedSite.country}
-                      </p>
-                      <button className="mt-2 text-xs text-amber-700 underline hover:no-underline" onClick={() => setEditingAddress(true)}>
-                        Adresse bearbeiten
-                      </button>
-                    </>
-                  ) : (
-                    <div className="space-y-2">
-                      <input className="input text-sm" placeholder="Straße & Hausnummer" value={editedSite.street || ''}
-                        onChange={(e) => setEditedSite((p) => ({ ...p, street: e.target.value }))} />
+                  {/* Add new site form */}
+                  {addingSite && (
+                    <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
+                      <p className="text-xs font-semibold text-gray-700">Neuen Standort anlegen</p>
+                      <input className="input text-sm" placeholder="Standortname *" value={newSite.siteName}
+                        onChange={(e) => setNewSite((p) => ({ ...p, siteName: e.target.value }))} />
+                      <input className="input text-sm" placeholder="Straße & Hausnummer *" value={newSite.street}
+                        onChange={(e) => setNewSite((p) => ({ ...p, street: e.target.value }))} />
                       <div className="flex gap-2">
-                        <input className="input text-sm w-24" placeholder="PLZ" value={editedSite.zip || ''}
-                          onChange={(e) => setEditedSite((p) => ({ ...p, zip: e.target.value }))} />
-                        <input className="input text-sm flex-1" placeholder="Stadt" value={editedSite.city || ''}
-                          onChange={(e) => setEditedSite((p) => ({ ...p, city: e.target.value }))} />
+                        <input className="input text-sm w-24" placeholder="PLZ *" value={newSite.zip}
+                          onChange={(e) => setNewSite((p) => ({ ...p, zip: e.target.value }))} />
+                        <input className="input text-sm flex-1" placeholder="Ort *" value={newSite.city}
+                          onChange={(e) => setNewSite((p) => ({ ...p, city: e.target.value }))} />
                       </div>
-                      <button className="text-xs text-amber-700 underline hover:no-underline" onClick={() => setEditingAddress(false)}>
-                        Abbrechen
-                      </button>
+                      <input className="input text-sm" placeholder="Ansprechpartner" value={newSite.contactPerson}
+                        onChange={(e) => setNewSite((p) => ({ ...p, contactPerson: e.target.value }))} />
+                      <textarea className="input text-sm" rows={2} placeholder="Notizen (Anfahrt, Öffnungszeiten …)" value={newSite.notes}
+                        onChange={(e) => setNewSite((p) => ({ ...p, notes: e.target.value }))} />
+                      {addSiteError && <p className="text-xs text-red-600">{addSiteError}</p>}
+                      <div className="flex gap-2 justify-end">
+                        <button className="btn-secondary text-xs py-1 px-3" onClick={() => { setAddingSite(false); setAddSiteError(''); }}>Abbrechen</button>
+                        <button className="btn-primary text-xs py-1 px-3" onClick={handleAddSite}>Anlegen</button>
+                      </div>
                     </div>
                   )}
+
+                  {/* Site cards */}
+                  <div className="space-y-2">
+                    {customer.sites.map((site) => (
+                      <button
+                        key={site.id}
+                        type="button"
+                        onClick={() => handleSiteSelect(site.id)}
+                        className={`w-full text-left p-3 rounded-xl border-2 transition-colors ${selectedSiteId === site.id ? 'border-brand-500 bg-brand-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-semibold text-gray-900">{site.siteName}</span>
+                              {site.isPrimary && <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">Hauptstandort</span>}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-0.5">{site.street}, {site.zip} {site.city}</p>
+                            {site.contactPerson && <p className="text-xs text-gray-400 mt-0.5">Ansprechpartner: {site.contactPerson}</p>}
+                            {site.notes && <p className="text-xs text-gray-400 italic mt-0.5">{site.notes}</p>}
+                          </div>
+                          {selectedSiteId === site.id && <CheckCircle className="w-5 h-5 text-brand-500 shrink-0 mt-0.5" />}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Address confirmation */}
+                {selectedSiteId && (
+                  <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                    <p className="text-sm font-semibold text-amber-900 mb-2">Ist die Lieferadresse noch aktuell?</p>
+                    {!editingAddress ? (
+                      <>
+                        <p className="text-sm text-amber-800">{editedSite.street}, {editedSite.zip} {editedSite.city}</p>
+                        {editedSite.contactPerson && <p className="text-xs text-amber-700 mt-0.5">Ansprechpartner: {editedSite.contactPerson}</p>}
+                        {editedSite.notes && <p className="text-xs text-amber-600 italic mt-0.5">{editedSite.notes}</p>}
+                        <button className="mt-2 text-xs text-amber-700 underline hover:no-underline" onClick={() => setEditingAddress(true)}>
+                          Adresse bearbeiten
+                        </button>
+                      </>
+                    ) : (
+                      <div className="space-y-2">
+                        <input className="input text-sm" placeholder="Straße & Hausnummer" value={editedSite.street || ''}
+                          onChange={(e) => setEditedSite((p) => ({ ...p, street: e.target.value }))} />
+                        <div className="flex gap-2">
+                          <input className="input text-sm w-24" placeholder="PLZ" value={editedSite.zip || ''}
+                            onChange={(e) => setEditedSite((p) => ({ ...p, zip: e.target.value }))} />
+                          <input className="input text-sm flex-1" placeholder="Stadt" value={editedSite.city || ''}
+                            onChange={(e) => setEditedSite((p) => ({ ...p, city: e.target.value }))} />
+                        </div>
+                        <input className="input text-sm" placeholder="Ansprechpartner" value={editedSite.contactPerson || ''}
+                          onChange={(e) => setEditedSite((p) => ({ ...p, contactPerson: e.target.value }))} />
+                        <textarea className="input text-sm" rows={2} placeholder="Notizen" value={editedSite.notes || ''}
+                          onChange={(e) => setEditedSite((p) => ({ ...p, notes: e.target.value }))} />
+                        <button className="text-xs text-amber-700 underline hover:no-underline" onClick={() => setEditingAddress(false)}>
+                          Abbrechen
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex justify-end">
                   <button className="btn-primary" onClick={() => setStep('machine')} disabled={!selectedSiteId}>
@@ -591,6 +674,7 @@ export default function NewRequest() {
                   <p className="text-xs text-gray-500">
                     {editedSite.street}, {editedSite.zip} {editedSite.city}
                   </p>
+                  {editedSite.contactPerson && <p className="text-xs text-gray-400 mt-0.5">Ansprechpartner: {editedSite.contactPerson}</p>}
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Maschinenmodell</p>

@@ -19,6 +19,8 @@ export interface CustomerSite {
   zip: string;
   city: string;
   country: string;
+  contactPerson?: string;
+  notes?: string;
   isPrimary: boolean;
 }
 
@@ -118,6 +120,7 @@ export const api = {
       request<CustomerSite>(`/customers/${customerId}/sites`, { method: 'POST', body: JSON.stringify(data) }),
     updateSite: (siteId: string, data: Partial<CustomerSite>) =>
       request<CustomerSite>(`/customers/sites/${siteId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteSite: (siteId: string) => request<void>(`/customers/sites/${siteId}`, { method: 'DELETE' }),
   },
 
   machineModels: {

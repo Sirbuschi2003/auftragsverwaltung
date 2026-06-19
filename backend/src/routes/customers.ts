@@ -69,7 +69,7 @@ router.put('/:id', requireRole('ADMIN'), async (req, res) => {
 
 router.post('/:id/sites', requireRole('ADMIN'), async (req, res) => {
   try {
-    const { siteName, street, zip, city, country, isPrimary } = req.body;
+    const { siteName, street, zip, city, country, contactPerson, notes, isPrimary } = req.body;
     if (isPrimary) {
       await prisma.customerSite.updateMany({
         where: { customerId: req.params.id },
@@ -77,7 +77,14 @@ router.post('/:id/sites', requireRole('ADMIN'), async (req, res) => {
       });
     }
     const site = await prisma.customerSite.create({
-      data: { customerId: req.params.id, siteName, street, zip, city, country: country || 'Deutschland', isPrimary: !!isPrimary },
+      data: {
+        customerId: req.params.id,
+        siteName, street, zip, city,
+        country: country || 'Deutschland',
+        contactPerson: contactPerson || null,
+        notes: notes || null,
+        isPrimary: !!isPrimary,
+      },
     });
     res.status(201).json(site);
   } catch (error) {
@@ -99,7 +106,7 @@ router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
 
 router.put('/sites/:siteId', requireAuth, async (req, res) => {
   try {
-    const { siteName, street, zip, city, country, isPrimary } = req.body;
+    const { siteName, street, zip, city, country, contactPerson, notes, isPrimary } = req.body;
     const existing = await prisma.customerSite.findUnique({ where: { id: req.params.siteId } });
     if (!existing) return res.status(404).json({ message: 'Standort nicht gefunden.' });
 
@@ -111,10 +118,30 @@ router.put('/sites/:siteId', requireAuth, async (req, res) => {
     }
     const site = await prisma.customerSite.update({
       where: { id: req.params.siteId },
-      data: { siteName, street, zip, city, country, isPrimary: !!isPrimary },
+      data: {
+        siteName, street, zip, city,
+        country: country || 'Deutschland',
+        contactPerson: contactPerson || null,
+        notes: notes || null,
+        isPrimary: !!isPrimary,
+      },
     });
     res.json(site);
   } catch (error) {
+    res.status(500).json({ message: 'Interner Serverfehler.' });
+  }
+});
+
+router.delete('/sites/:siteId', requireRole('ADMIN'), async (req, res) => {
+  try {
+    const existing = await prisma.customerSite.findUnique({ where: { id: req.params.siteId } });
+    if (!existing) return res.status(404).json({ message: 'Standort nicht gefunden.' });
+    await prisma.customerSite.delete({ where: { id: req.params.siteId } });
+    res.json({ message: 'Gelöscht.' });
+  } catch (error: any) {
+    if (error.code === 'P2003' || error.code === 'P2014') {
+      return res.status(409).json({ message: 'Standort kann nicht gelöscht werden – es existieren noch Aufträge für diesen Standort.' });
+    }
     res.status(500).json({ message: 'Interner Serverfehler.' });
   }
 });

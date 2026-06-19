@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, X, Check } from 'lucide-react';
-import { api, User, MachineModel, Accessory, Customer, Role } from '../api/client';
+import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
+import { api, User, MachineModel, Accessory, Customer, CustomerSite, Role } from '../api/client';
 
 type Tab = 'users' | 'models' | 'accessories' | 'customers' | 'import';
 
@@ -759,119 +759,308 @@ function ImportTab() {
   );
 }
 
+// ─── Site Form ───────────────────────────────────────────────────────────────
+const EMPTY_SITE: Partial<CustomerSite> = { siteName: '', street: '', zip: '', city: '', country: 'Deutschland', contactPerson: '', notes: '', isPrimary: false };
+
+function SiteForm({ site, onSave, onCancel }: {
+  site: Partial<CustomerSite>;
+  onSave: (data: Partial<CustomerSite>) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState<Partial<CustomerSite>>(site);
+  const [error, setError] = useState('');
+  const set = (k: keyof CustomerSite, v: string | boolean) => setForm((p) => ({ ...p, [k]: v }));
+
+  const submit = async () => {
+    if (!form.siteName?.trim() || !form.street?.trim() || !form.zip?.trim() || !form.city?.trim()) {
+      setError('Standortname, Straße, PLZ und Ort sind Pflichtfelder.');
+      return;
+    }
+    setError('');
+    try { await onSave(form); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : 'Fehler.'); }
+  };
+
+  return (
+    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2">
+          <label className="label">Standortname *</label>
+          <input className="input" placeholder="z.B. Hauptsitz, Filiale Nord …" value={form.siteName || ''} onChange={(e) => set('siteName', e.target.value)} />
+        </div>
+        <div className="col-span-2">
+          <label className="label">Straße *</label>
+          <input className="input" placeholder="Musterstraße 1" value={form.street || ''} onChange={(e) => set('street', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">PLZ *</label>
+          <input className="input" placeholder="12345" value={form.zip || ''} onChange={(e) => set('zip', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Ort *</label>
+          <input className="input" placeholder="Musterstadt" value={form.city || ''} onChange={(e) => set('city', e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Ansprechpartner</label>
+          <input className="input" placeholder="Max Mustermann" value={form.contactPerson || ''} onChange={(e) => set('contactPerson', e.target.value)} />
+        </div>
+        <div className="flex items-end pb-1">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={!!form.isPrimary} onChange={(e) => set('isPrimary', e.target.checked)} className="w-4 h-4 rounded accent-brand-600" />
+            <span className="text-sm text-gray-700">Hauptstandort</span>
+          </label>
+        </div>
+        <div className="col-span-2">
+          <label className="label">Weitere Notizen</label>
+          <textarea className="input" rows={2} placeholder="Anfahrt, Öffnungszeiten, besondere Hinweise …" value={form.notes || ''} onChange={(e) => set('notes', e.target.value)} />
+        </div>
+      </div>
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="flex gap-2 justify-end">
+        <button className="btn-secondary" onClick={onCancel}><X className="w-4 h-4" /> Abbrechen</button>
+        <button className="btn-primary" onClick={submit}><Check className="w-4 h-4" /> Speichern</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Customers Tab ────────────────────────────────────────────────────────────
 function CustomersTab() {
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [editing, setEditing] = useState<Partial<Customer> | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<Partial<Customer> | null>(null);
   const [isNew, setIsNew] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [addingSite, setAddingSite] = useState(false);
+  const [editingSite, setEditingSite] = useState<CustomerSite | null>(null);
+  const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
+  const [deleteSiteId, setDeleteSiteId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   const load = useCallback(() => api.customers.getAll().then(setCustomers), []);
   useEffect(() => { load(); }, [load]);
 
-  const save = async () => {
-    if (!editing) return;
+  const saveCustomer = async () => {
+    if (!editingCustomer) return;
     setError('');
     try {
       if (isNew) {
-        await api.customers.create({
-          customerNumber: editing.customerNumber!,
-          companyName: editing.companyName!,
-          phone: editing.phone,
-          email: editing.email,
+        const created = await api.customers.create({
+          customerNumber: editingCustomer.customerNumber!,
+          companyName: editingCustomer.companyName!,
+          phone: editingCustomer.phone,
+          email: editingCustomer.email,
         });
+        setEditingCustomer(null);
+        await load();
+        setExpandedId(created.id);
+        setAddingSite(true);
       } else {
-        await api.customers.update(editing.id!, editing);
+        await api.customers.update(editingCustomer.id!, editingCustomer);
+        setEditingCustomer(null);
+        load();
       }
-      setEditing(null);
-      load();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Fehler.');
     }
   };
 
-  const del = async (id: string) => {
+  const delCustomer = async (id: string) => {
     try { await api.customers.delete(id); load(); }
     catch (e: unknown) { setError(e instanceof Error ? e.message : 'Fehler.'); }
-    finally { setDeleteId(null); }
+    finally { setDeleteCustomerId(null); }
   };
+
+  const saveSite = async (customerId: string, data: Partial<CustomerSite>) => {
+    await api.customers.createSite(customerId, data);
+    setAddingSite(false);
+    load();
+  };
+
+  const updateSite = async (siteId: string, data: Partial<CustomerSite>) => {
+    await api.customers.updateSite(siteId, data);
+    setEditingSite(null);
+    load();
+  };
+
+  const delSite = async (siteId: string) => {
+    try { await api.customers.deleteSite(siteId); load(); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : 'Fehler.'); }
+    finally { setDeleteSiteId(null); }
+  };
+
+  const expanded = customers.find((c) => c.id === expandedId);
 
   return (
     <div className="space-y-4">
-      {deleteId && (
+      {deleteCustomerId && (
         <ConfirmDialog
           message="Kunden wirklich löschen? Nur möglich wenn keine Aufträge vorhanden sind."
-          onConfirm={() => del(deleteId)}
-          onCancel={() => setDeleteId(null)}
+          onConfirm={() => delCustomer(deleteCustomerId)}
+          onCancel={() => setDeleteCustomerId(null)}
+        />
+      )}
+      {deleteSiteId && (
+        <ConfirmDialog
+          message="Standort wirklich löschen? Nur möglich wenn keine Aufträge für diesen Standort vorhanden sind."
+          onConfirm={() => delSite(deleteSiteId)}
+          onCancel={() => setDeleteSiteId(null)}
         />
       )}
       {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
+
       <div className="flex justify-end">
-        <button className="btn-primary" onClick={() => { setEditing({}); setIsNew(true); setError(''); }}>
+        <button className="btn-primary" onClick={() => { setEditingCustomer({}); setIsNew(true); setError(''); setExpandedId(null); }}>
           <Plus className="w-4 h-4" /> Kunden hinzufügen
         </button>
       </div>
-      {editing && (
+
+      {/* New customer form */}
+      {editingCustomer && isNew && (
         <div className="card p-5 space-y-3">
-          <h3 className="text-sm font-semibold text-gray-900">{isNew ? 'Neuer Kunde' : 'Kunde bearbeiten'}</h3>
+          <h3 className="text-sm font-semibold text-gray-900">Neuer Kunde</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Kundennummer</label>
-              <input className="input" value={editing.customerNumber || ''} onChange={(e) => setEditing((p) => ({ ...p, customerNumber: e.target.value }))} disabled={!isNew} />
+              <label className="label">Kundennummer *</label>
+              <input className="input" value={editingCustomer.customerNumber || ''} onChange={(e) => setEditingCustomer((p) => ({ ...p, customerNumber: e.target.value }))} />
             </div>
             <div>
-              <label className="label">Firmenname</label>
-              <input className="input" value={editing.companyName || ''} onChange={(e) => setEditing((p) => ({ ...p, companyName: e.target.value }))} />
+              <label className="label">Firmenname *</label>
+              <input className="input" value={editingCustomer.companyName || ''} onChange={(e) => setEditingCustomer((p) => ({ ...p, companyName: e.target.value }))} />
             </div>
             <div>
               <label className="label">Telefon</label>
-              <input className="input" value={editing.phone || ''} onChange={(e) => setEditing((p) => ({ ...p, phone: e.target.value }))} />
+              <input className="input" value={editingCustomer.phone || ''} onChange={(e) => setEditingCustomer((p) => ({ ...p, phone: e.target.value }))} />
             </div>
             <div>
               <label className="label">E-Mail</label>
-              <input className="input" type="email" value={editing.email || ''} onChange={(e) => setEditing((p) => ({ ...p, email: e.target.value }))} />
+              <input className="input" type="email" value={editingCustomer.email || ''} onChange={(e) => setEditingCustomer((p) => ({ ...p, email: e.target.value }))} />
             </div>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex gap-2 justify-end">
-            <button className="btn-secondary" onClick={() => { setEditing(null); setError(''); }}><X className="w-4 h-4" /> Abbrechen</button>
-            <button className="btn-primary" onClick={save}><Check className="w-4 h-4" /> Speichern</button>
+            <button className="btn-secondary" onClick={() => { setEditingCustomer(null); setError(''); }}><X className="w-4 h-4" /> Abbrechen</button>
+            <button className="btn-primary" onClick={saveCustomer}><Check className="w-4 h-4" /> Speichern & Standort hinzufügen</button>
           </div>
         </div>
       )}
+
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
+              <th className="w-8" />
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Kundennr.</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Firma</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Standorte</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Kontakt</th>
-              <th className="w-20" />
+              <th className="w-24" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody>
             {customers.map((c) => (
-              <tr key={c.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-600">{c.customerNumber}</td>
-                <td className="px-4 py-3 font-medium text-gray-900">{c.companyName}</td>
-                <td className="px-4 py-3 text-gray-500">{c.sites.length} Standort{c.sites.length !== 1 ? 'e' : ''}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">
-                  {c.phone && <p>{c.phone}</p>}
-                  {c.email && <p>{c.email}</p>}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-1 justify-end">
-                    <button className="text-gray-400 hover:text-brand-600 transition-colors p-1" onClick={() => { setEditing({ ...c }); setIsNew(false); setError(''); }}>
-                      <Pencil className="w-4 h-4" />
+              <>
+                <tr key={c.id} className="hover:bg-gray-50 border-t border-gray-100">
+                  <td className="pl-3">
+                    <button
+                      className="text-gray-400 hover:text-brand-600 transition-colors p-1"
+                      onClick={() => { setExpandedId(expandedId === c.id ? null : c.id); setAddingSite(false); setEditingSite(null); setEditingCustomer(null); }}
+                      title="Standorte anzeigen"
+                    >
+                      {expandedId === c.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
-                    <button className="text-gray-400 hover:text-red-500 transition-colors p-1" onClick={() => setDeleteId(c.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-600">{c.customerNumber}</td>
+                  <td className="px-4 py-3">
+                    {editingCustomer && !isNew && editingCustomer.id === c.id ? (
+                      <div className="flex gap-2 items-center flex-wrap">
+                        <input className="input py-1 text-sm w-40" placeholder="Firma" value={editingCustomer.companyName || ''} onChange={(e) => setEditingCustomer((p) => ({ ...p, companyName: e.target.value }))} />
+                        <input className="input py-1 text-sm w-32" placeholder="Telefon" value={editingCustomer.phone || ''} onChange={(e) => setEditingCustomer((p) => ({ ...p, phone: e.target.value }))} />
+                        <input className="input py-1 text-sm w-40" placeholder="E-Mail" value={editingCustomer.email || ''} onChange={(e) => setEditingCustomer((p) => ({ ...p, email: e.target.value }))} />
+                        <button className="btn-primary py-1 px-2 text-xs" onClick={saveCustomer}><Check className="w-3 h-3" /></button>
+                        <button className="btn-secondary py-1 px-2 text-xs" onClick={() => setEditingCustomer(null)}><X className="w-3 h-3" /></button>
+                      </div>
+                    ) : (
+                      <span className="font-medium text-gray-900">{c.companyName}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">
+                    {c.phone && <p>{c.phone}</p>}
+                    {c.email && <p>{c.email}</p>}
+                    <p className="text-gray-400">{c.sites.length} Standort{c.sites.length !== 1 ? 'e' : ''}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1 justify-end">
+                      <button className="text-gray-400 hover:text-brand-600 transition-colors p-1" title="Kundendaten bearbeiten" onClick={() => { setEditingCustomer({ ...c }); setIsNew(false); setError(''); }}>
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button className="text-gray-400 hover:text-red-500 transition-colors p-1" onClick={() => setDeleteCustomerId(c.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                {/* Expanded sites panel */}
+                {expandedId === c.id && (
+                  <tr key={`${c.id}-sites`}>
+                    <td colSpan={5} className="bg-blue-50/40 px-6 pb-4 pt-2">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1"><MapPin className="w-3 h-3" /> Standorte</span>
+                          {!addingSite && !editingSite && (
+                            <button className="btn-primary py-1 px-2 text-xs" onClick={() => { setAddingSite(true); setEditingSite(null); }}>
+                              <Plus className="w-3 h-3" /> Standort hinzufügen
+                            </button>
+                          )}
+                        </div>
+
+                        {c.sites.map((s) => (
+                          <div key={s.id}>
+                            {editingSite?.id === s.id ? (
+                              <SiteForm
+                                site={editingSite}
+                                onSave={(data) => updateSite(s.id, data)}
+                                onCancel={() => setEditingSite(null)}
+                              />
+                            ) : (
+                              <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-start justify-between gap-4">
+                                <div className="space-y-0.5 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-gray-900 text-sm">{s.siteName}</span>
+                                    {s.isPrimary && <span className="text-xs bg-brand-100 text-brand-700 px-1.5 py-0.5 rounded-full font-medium">Hauptstandort</span>}
+                                  </div>
+                                  <p className="text-xs text-gray-600">{s.street}, {s.zip} {s.city}</p>
+                                  {s.contactPerson && <p className="text-xs text-gray-500">Ansprechpartner: {s.contactPerson}</p>}
+                                  {s.notes && <p className="text-xs text-gray-400 italic">{s.notes}</p>}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button className="text-gray-400 hover:text-brand-600 transition-colors p-1" onClick={() => { setEditingSite(s); setAddingSite(false); }}>
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button className="text-gray-400 hover:text-red-500 transition-colors p-1" onClick={() => setDeleteSiteId(s.id)}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+
+                        {c.sites.length === 0 && !addingSite && (
+                          <p className="text-xs text-gray-400 italic text-center py-2">Noch keine Standorte vorhanden.</p>
+                        )}
+
+                        {addingSite && (
+                          <SiteForm
+                            site={{ ...EMPTY_SITE, isPrimary: c.sites.length === 0 }}
+                            onSave={(data) => saveSite(c.id, data)}
+                            onCancel={() => setAddingSite(false)}
+                          />
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
             ))}
           </tbody>
         </table>
