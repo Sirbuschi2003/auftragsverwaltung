@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, CheckCircle, Clock, Package, Wrench, AlertTriangle,
-  ChevronRight, ExternalLink, Trash2,
+  ChevronRight, ExternalLink, Trash2, Printer,
 } from 'lucide-react';
 import { api, MachineRequest, RequestStatus, RequestAccessory } from '../api/client';
 import { StatusBadge, STATUS_LABELS } from '../components/StatusBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { enqueueTransition } from '../services/offline';
+import MachinenanforderungPrint from '../components/MachinenanforderungPrint';
 
 function Timeline({ request }: { request: MachineRequest }) {
   const logs = request.statusLogs || [];
@@ -367,6 +368,7 @@ export default function RequestDetail() {
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showPrint, setShowPrint] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -434,6 +436,9 @@ export default function RequestDetail() {
         </div>
       )}
 
+      {/* Print modal */}
+      {showPrint && <MachinenanforderungPrint request={request} onClose={() => setShowPrint(false)} />}
+
       {/* Header */}
       <div className="flex items-start gap-3">
         <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 transition-colors mt-1">
@@ -446,10 +451,18 @@ export default function RequestDetail() {
             </span>
             <StatusBadge status={request.status} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mt-1">{request.customer.companyName}</h1>
-          <p className="text-sm text-gray-500">{request.machineModel.modelName}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mt-1">{request.customer.companyName}</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400">{request.machineModel.modelName}</p>
         </div>
         <div className="flex items-start gap-3">
+          <button
+            onClick={() => setShowPrint(true)}
+            className="flex items-center gap-1.5 text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 bg-brand-50 dark:bg-brand-600/15 hover:bg-brand-100 dark:hover:bg-brand-600/25 px-3 py-1.5 rounded-lg transition-colors font-medium border border-brand-100 dark:border-brand-500/30"
+            title="Maschinenanforderung drucken"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            Anforderung drucken
+          </button>
           {canDelete && (
             <button
               onClick={() => setConfirmDelete(true)}
@@ -459,7 +472,7 @@ export default function RequestDetail() {
               <Trash2 className="w-4 h-4" />
             </button>
           )}
-          <div className="text-right text-xs text-gray-400">
+          <div className="text-right text-xs text-gray-400 dark:text-slate-500">
             <p>Erstellt {new Date(request.createdAt).toLocaleDateString('de-DE')}</p>
             <p>von {request.salesRep.name}</p>
           </div>
