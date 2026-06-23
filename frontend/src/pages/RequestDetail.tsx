@@ -101,47 +101,46 @@ function ActionPanel({ request, onUpdate }: ActionPanelProps) {
   const allConfirmed = noSnItems.every((a) => confirmed[a.id]);
   const canSubmitWarehouse = allSnFilled && allConfirmed;
 
-  // SALES: can submit a DRAFT
-  if (request.status === 'DRAFT' && (user.role === 'SALES' || user.role === 'ADMIN')) {
+  // SALES: DRAFT → zur Genehmigung einreichen
+  if ((request.status === 'DRAFT' || request.status === 'SUBMITTED') && (user.role === 'SALES' || user.role === 'ADMIN')) {
     return (
       <div className="space-y-3">
-        <textarea
-          className="input resize-none"
-          rows={2}
-          placeholder="Kommentar (optional)"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          className="btn-primary w-full justify-center"
-          onClick={() => transition('SUBMITTED')}
-          disabled={loading}
-        >
-          Anfrage einreichen
+        <textarea className="input resize-none" rows={2} placeholder="Kommentar (optional)" value={comment} onChange={(e) => setComment(e.target.value)} />
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        <button className="btn-primary w-full justify-center" onClick={() => transition('PENDING_APPROVAL')} disabled={loading}>
+          Zur Genehmigung einreichen →
         </button>
       </div>
     );
   }
 
-  // MANAGEMENT: can approve SUBMITTED
-  if (request.status === 'SUBMITTED' && (user.role === 'MANAGEMENT' || user.role === 'ADMIN')) {
+  // BRANCH_MANAGER: PENDING_APPROVAL → TECHNICAL_CHECK
+  if (request.status === 'PENDING_APPROVAL' && (user.role === 'BRANCH_MANAGER' || user.role === 'ADMIN')) {
     return (
       <div className="space-y-3">
-        <textarea
-          className="input resize-none"
-          rows={2}
-          placeholder="Kommentar (optional)"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          className="btn-primary w-full justify-center"
-          onClick={() => transition('IN_WAREHOUSE')}
-          disabled={loading}
-        >
-          Genehmigen → Ins Lager
+        <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-xl text-sm text-blue-800 dark:text-blue-300">
+          Auftrag vom Vertrieb eingereicht — bitte prüfen und genehmigen.
+        </div>
+        <textarea className="input resize-none" rows={2} placeholder="Kommentar (optional)" value={comment} onChange={(e) => setComment(e.target.value)} />
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        <button className="btn-primary w-full justify-center" onClick={() => transition('TECHNICAL_CHECK')} disabled={loading}>
+          Genehmigen → Technische Prüfung
+        </button>
+      </div>
+    );
+  }
+
+  // TECHNICAL_LEAD: TECHNICAL_CHECK → IN_WAREHOUSE
+  if (request.status === 'TECHNICAL_CHECK' && (user.role === 'TECHNICAL_LEAD' || user.role === 'ADMIN')) {
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900 rounded-xl text-sm text-indigo-800 dark:text-indigo-300">
+          Anforderung prüfen und für das Lager freigeben.
+        </div>
+        <textarea className="input resize-none" rows={2} placeholder="Kommentar / Hinweise" value={comment} onChange={(e) => setComment(e.target.value)} />
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        <button className="btn-primary w-full justify-center" onClick={() => transition('IN_WAREHOUSE')} disabled={loading}>
+          Freigeben → Ins Lager
         </button>
       </div>
     );
@@ -315,43 +314,85 @@ function ActionPanel({ request, onUpdate }: ActionPanelProps) {
     );
   }
 
-  // TECHNICIAN: finish CONFIGURING → DONE
+  // TECHNICIAN: CONFIGURING → DELIVERY_NOTE
   if (request.status === 'CONFIGURING' && (user.role === 'TECHNICIAN' || user.role === 'ADMIN')) {
     return (
       <div className="space-y-3">
-        <textarea
-          className="input resize-none"
-          rows={2}
-          placeholder="Kommentar (optional)"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          className="btn-primary w-full justify-center"
-          onClick={() => transition('DONE')}
-          disabled={loading}
-        >
+        <textarea className="input resize-none" rows={2} placeholder="Kommentar (optional)" value={comment} onChange={(e) => setComment(e.target.value)} />
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        <button className="btn-primary w-full justify-center" onClick={() => transition('DELIVERY_NOTE')} disabled={loading}>
           <CheckCircle className="w-4 h-4" />
-          Als fertig markieren
+          Installation abgeschlossen → Lieferschein
         </button>
       </div>
     );
   }
 
-  // DONE
-  if (request.status === 'DONE') {
+  // MANAGEMENT (Verwaltung): DELIVERY_NOTE → SCHEDULING
+  if (request.status === 'DELIVERY_NOTE' && (user.role === 'MANAGEMENT' || user.role === 'ADMIN')) {
     return (
-      <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
-        <div className="flex items-start gap-3">
-          <ExternalLink className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-amber-900">Lieferschein erstellen</p>
-            <p className="text-xs text-amber-700 mt-0.5">
-              Lieferschein bitte im externen System erstellen.
-            </p>
+      <div className="space-y-3">
+        <div className="p-3 bg-pink-50 dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900 rounded-xl">
+          <div className="flex items-start gap-2">
+            <ExternalLink className="w-4 h-4 text-pink-600 dark:text-pink-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-pink-900 dark:text-pink-300">Lieferschein im externen System erstellen</p>
+              <p className="text-xs text-pink-700 dark:text-pink-400 mt-0.5">Sobald der Lieferschein erstellt wurde, hier bestätigen.</p>
+            </div>
           </div>
         </div>
+        <textarea className="input resize-none" rows={2} placeholder="Lieferschein-Nr. oder Kommentar" value={comment} onChange={(e) => setComment(e.target.value)} />
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        <button className="btn-primary w-full justify-center" onClick={() => transition('SCHEDULING')} disabled={loading}>
+          Lieferschein erstellt ✓ → Terminplanung
+        </button>
+      </div>
+    );
+  }
+
+  // DISPATCHER: SCHEDULING → DONE
+  if (request.status === 'SCHEDULING' && (user.role === 'DISPATCHER' || user.role === 'ADMIN')) {
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900 rounded-xl text-sm text-teal-800 dark:text-teal-300">
+          Liefertermin beim Kunden vereinbaren und Auftrag abschließen.
+        </div>
+        <textarea className="input resize-none" rows={2} placeholder="Liefertermin (z.B. 15.07.2026, 09:00 Uhr)" value={comment} onChange={(e) => setComment(e.target.value)} />
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        <button className="btn-primary w-full justify-center" onClick={() => transition('DONE')} disabled={loading}>
+          <CheckCircle className="w-4 h-4" />
+          Lieferung eingeplant → Fertig
+        </button>
+      </div>
+    );
+  }
+
+  // DONE → ARCHIVIEREN (nur Admin)
+  if (request.status === 'DONE') {
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-100 dark:border-green-900 rounded-xl text-sm text-green-800 dark:text-green-300 flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 shrink-0" />
+          Auftrag abgeschlossen. Aufträge werden 10 Jahre aufbewahrt.
+        </div>
+        {user.role === 'ADMIN' && (
+          <>
+            <textarea className="input resize-none" rows={2} placeholder="Kommentar (optional)" value={comment} onChange={(e) => setComment(e.target.value)} />
+            {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+            <button className="btn-secondary w-full justify-center text-gray-500" onClick={() => transition('ARCHIVED')} disabled={loading}>
+              In Archiv verschieben
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // ARCHIVED
+  if (request.status === 'ARCHIVED') {
+    return (
+      <div className="p-3 bg-gray-50 dark:bg-slate-700/40 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-500 dark:text-slate-400">
+        Dieser Auftrag ist archiviert und wird gemäß 10-Jahres-Aufbewahrungspflicht gespeichert.
       </div>
     );
   }
@@ -605,7 +646,7 @@ export default function RequestDetail() {
               <h2 className="text-sm font-semibold text-gray-900">Pipeline</h2>
             </div>
             <div className="card-body space-y-1.5">
-              {(['DRAFT', 'SUBMITTED', 'IN_WAREHOUSE', 'UNPACKING', 'CONFIGURING', 'DONE'] as RequestStatus[]).map((s, i, arr) => {
+              {(['DRAFT', 'PENDING_APPROVAL', 'TECHNICAL_CHECK', 'IN_WAREHOUSE', 'UNPACKING', 'CONFIGURING', 'DELIVERY_NOTE', 'SCHEDULING', 'DONE', 'ARCHIVED'] as RequestStatus[]).map((s, i, arr) => {
                 const current = s === request.status;
                 const past = arr.indexOf(request.status) > i;
                 return (

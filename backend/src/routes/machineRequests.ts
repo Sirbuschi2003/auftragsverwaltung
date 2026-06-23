@@ -26,11 +26,30 @@ async function generateRequestNumber(): Promise<string> {
 }
 
 const VALID_TRANSITIONS: Record<string, RequestStatus[]> = {
-  DRAFT: ['SUBMITTED'],
-  SUBMITTED: ['IN_WAREHOUSE'],
+  DRAFT: ['PENDING_APPROVAL'],
+  SUBMITTED: ['PENDING_APPROVAL'],       // Altdaten-Kompatibilität
+  PENDING_APPROVAL: ['TECHNICAL_CHECK'],
+  TECHNICAL_CHECK: ['IN_WAREHOUSE'],
   IN_WAREHOUSE: ['UNPACKING'],
   UNPACKING: ['CONFIGURING'],
-  CONFIGURING: ['DONE'],
+  CONFIGURING: ['DELIVERY_NOTE'],
+  DELIVERY_NOTE: ['SCHEDULING'],
+  SCHEDULING: ['DONE'],
+  DONE: ['ARCHIVED'],
+};
+
+// Welche Rollen dürfen welchen Übergang ausführen
+const TRANSITION_ROLES: Record<string, string[]> = {
+  DRAFT_PENDING_APPROVAL: ['SALES', 'ADMIN'],
+  SUBMITTED_PENDING_APPROVAL: ['SALES', 'ADMIN', 'MANAGEMENT', 'BRANCH_MANAGER'],
+  PENDING_APPROVAL_TECHNICAL_CHECK: ['BRANCH_MANAGER', 'ADMIN'],
+  TECHNICAL_CHECK_IN_WAREHOUSE: ['TECHNICAL_LEAD', 'ADMIN'],
+  IN_WAREHOUSE_UNPACKING: ['WAREHOUSE', 'ADMIN'],
+  UNPACKING_CONFIGURING: ['TECHNICIAN', 'ADMIN'],
+  CONFIGURING_DELIVERY_NOTE: ['TECHNICIAN', 'ADMIN'],
+  DELIVERY_NOTE_SCHEDULING: ['MANAGEMENT', 'ADMIN'],
+  SCHEDULING_DONE: ['DISPATCHER', 'ADMIN'],
+  DONE_ARCHIVED: ['ADMIN'],
 };
 
 router.get('/', requireAuth, async (req, res) => {
@@ -186,6 +205,15 @@ router.post('/:id/status', requireAuth, async (req, res) => {
     const allowed = VALID_TRANSITIONS[request.status] || [];
     if (!allowed.includes(toStatus as RequestStatus)) {
       return res.status(400).json({ message: `Übergang von ${request.status} zu ${toStatus} nicht erlaubt.` });
+    }
+
+    // Rollenprüfung für diesen Übergang
+    const transitionKey = `${request.status}_${toStatus}`;
+    const allowedRoles = TRANSITION_ROLES[transitionKey];
+    if (allowedRoles && !allowedRoles.includes(req.session.userRole!)) {
+      return res.status(403).json({
+        message: `Für diesen Statuswechsel nicht berechtigt. Erforderliche Rolle: ${allowedRoles.filter((r) => r !== 'ADMIN').join(' oder ')}.`,
+      });
     }
 
     const updateData: Record<string, unknown> = { status: toStatus };

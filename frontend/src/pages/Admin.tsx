@@ -5,11 +5,14 @@ import { api, User, MachineModel, Accessory, Customer, CustomerSite, Role } from
 type Tab = 'users' | 'models' | 'accessories' | 'customers' | 'import';
 
 const ROLE_LABELS: Record<Role, string> = {
-  SALES: 'Vertrieb',
-  WAREHOUSE: 'Lager',
-  TECHNICIAN: 'Techniker',
-  ADMIN: 'Administrator',
-  MANAGEMENT: 'Leitung',
+  SALES:          'Vertrieb',
+  BRANCH_MANAGER: 'Niederlassungsleiter',
+  TECHNICAL_LEAD: 'Technischer Leiter',
+  WAREHOUSE:      'Lager',
+  TECHNICIAN:     'Techniker',
+  MANAGEMENT:     'Verwaltung',
+  DISPATCHER:     'Disponent',
+  ADMIN:          'Administrator',
 };
 
 // ─── Modal ───────────────────────────────────────────────────────────────────

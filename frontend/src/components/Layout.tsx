@@ -22,18 +22,21 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/', icon: LayoutDashboard, label: 'Übersicht', roles: ['SALES', 'WAREHOUSE', 'TECHNICIAN', 'ADMIN', 'MANAGEMENT'] },
+  { to: '/', icon: LayoutDashboard, label: 'Übersicht', roles: ['SALES', 'BRANCH_MANAGER', 'TECHNICAL_LEAD', 'WAREHOUSE', 'TECHNICIAN', 'ADMIN', 'MANAGEMENT', 'DISPATCHER'] },
   { to: '/requests/new', icon: PlusCircle, label: 'Neue Anfrage', roles: ['SALES', 'ADMIN'] },
   { to: '/statistics', icon: BarChart3, label: 'Statistiken', roles: ['MANAGEMENT', 'ADMIN'] },
   { to: '/admin', icon: Settings, label: 'Verwaltung', roles: ['ADMIN'] },
 ];
 
 const ROLE_LABELS: Record<Role, string> = {
-  SALES: 'Vertrieb',
-  WAREHOUSE: 'Lager',
-  TECHNICIAN: 'Techniker',
-  ADMIN: 'Administrator',
-  MANAGEMENT: 'Leitung',
+  SALES:          'Vertrieb',
+  BRANCH_MANAGER: 'Niederlassungsleiter',
+  TECHNICAL_LEAD: 'Technischer Leiter',
+  WAREHOUSE:      'Lager',
+  TECHNICIAN:     'Techniker',
+  MANAGEMENT:     'Verwaltung',
+  DISPATCHER:     'Disponent',
+  ADMIN:          'Administrator',
 };
 
 export function Layout({ children }: { children: React.ReactNode }) {

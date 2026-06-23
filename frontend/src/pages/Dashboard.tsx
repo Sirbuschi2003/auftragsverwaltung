@@ -5,33 +5,59 @@ import { api, MachineRequest, RequestStatus } from '../api/client';
 import { StatusBadge, STATUS_LABELS } from '../components/StatusBadge';
 import { useAuth } from '../contexts/AuthContext';
 
-const ALL_STATUSES: RequestStatus[] = ['DRAFT', 'SUBMITTED', 'IN_WAREHOUSE', 'UNPACKING', 'CONFIGURING', 'DONE'];
+const ALL_STATUSES: RequestStatus[] = [
+  'DRAFT', 'PENDING_APPROVAL', 'TECHNICAL_CHECK',
+  'IN_WAREHOUSE', 'UNPACKING', 'CONFIGURING',
+  'DELIVERY_NOTE', 'SCHEDULING', 'DONE', 'ARCHIVED',
+];
+
+// Statuses that appear in the summary bar (excluding archived/legacy)
+const SUMMARY_STATUSES: RequestStatus[] = [
+  'DRAFT', 'PENDING_APPROVAL', 'TECHNICAL_CHECK',
+  'IN_WAREHOUSE', 'UNPACKING', 'CONFIGURING',
+  'DELIVERY_NOTE', 'SCHEDULING', 'DONE',
+];
 
 const STATUS_COLORS: Record<RequestStatus, string> = {
-  DRAFT: 'border-t-gray-400',
-  SUBMITTED: 'border-t-blue-500',
-  IN_WAREHOUSE: 'border-t-yellow-500',
-  UNPACKING: 'border-t-orange-500',
-  CONFIGURING: 'border-t-purple-500',
-  DONE: 'border-t-green-500',
+  DRAFT:            'border-t-gray-400',
+  SUBMITTED:        'border-t-slate-400',
+  PENDING_APPROVAL: 'border-t-blue-500',
+  TECHNICAL_CHECK:  'border-t-indigo-500',
+  IN_WAREHOUSE:     'border-t-yellow-500',
+  UNPACKING:        'border-t-orange-500',
+  CONFIGURING:      'border-t-purple-500',
+  DELIVERY_NOTE:    'border-t-pink-500',
+  SCHEDULING:       'border-t-teal-500',
+  DONE:             'border-t-green-500',
+  ARCHIVED:         'border-t-gray-300',
 };
 
 const SUMMARY_BG: Record<RequestStatus, string> = {
-  DRAFT: 'bg-gray-50 dark:bg-slate-800/60 border-gray-200 dark:border-slate-700',
-  SUBMITTED: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900',
-  IN_WAREHOUSE: 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900',
-  UNPACKING: 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900',
-  CONFIGURING: 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900',
-  DONE: 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900',
+  DRAFT:            'bg-gray-50 dark:bg-slate-800/60 border-gray-200 dark:border-slate-700',
+  SUBMITTED:        'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700',
+  PENDING_APPROVAL: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900',
+  TECHNICAL_CHECK:  'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-900',
+  IN_WAREHOUSE:     'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900',
+  UNPACKING:        'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900',
+  CONFIGURING:      'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900',
+  DELIVERY_NOTE:    'bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-900',
+  SCHEDULING:       'bg-teal-50 dark:bg-teal-950/20 border-teal-200 dark:border-teal-900',
+  DONE:             'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900',
+  ARCHIVED:         'bg-gray-50 dark:bg-slate-800/40 border-gray-200 dark:border-slate-700',
 };
 
 const SUMMARY_TEXT: Record<RequestStatus, string> = {
-  DRAFT: 'text-gray-700 dark:text-slate-300',
-  SUBMITTED: 'text-blue-700 dark:text-blue-400',
-  IN_WAREHOUSE: 'text-yellow-700 dark:text-yellow-400',
-  UNPACKING: 'text-orange-700 dark:text-orange-400',
-  CONFIGURING: 'text-purple-700 dark:text-purple-400',
-  DONE: 'text-green-700 dark:text-green-400',
+  DRAFT:            'text-gray-700 dark:text-slate-300',
+  SUBMITTED:        'text-slate-600 dark:text-slate-400',
+  PENDING_APPROVAL: 'text-blue-700 dark:text-blue-400',
+  TECHNICAL_CHECK:  'text-indigo-700 dark:text-indigo-400',
+  IN_WAREHOUSE:     'text-yellow-700 dark:text-yellow-400',
+  UNPACKING:        'text-orange-700 dark:text-orange-400',
+  CONFIGURING:      'text-purple-700 dark:text-purple-400',
+  DELIVERY_NOTE:    'text-pink-700 dark:text-pink-400',
+  SCHEDULING:       'text-teal-700 dark:text-teal-400',
+  DONE:             'text-green-700 dark:text-green-400',
+  ARCHIVED:         'text-gray-400 dark:text-slate-500',
 };
 
 function RequestCard({ request, onClick }: { request: MachineRequest; onClick: () => void }) {
@@ -90,13 +116,16 @@ export default function Dashboard() {
   const visibleStatuses = ALL_STATUSES.filter((s) => {
     if (!user) return false;
     const roleMap: Record<string, RequestStatus[]> = {
-      SALES: ['DRAFT', 'SUBMITTED'],
-      MANAGEMENT: ['SUBMITTED', 'IN_WAREHOUSE', 'DONE'],
-      WAREHOUSE: ['IN_WAREHOUSE', 'UNPACKING'],
-      TECHNICIAN: ['UNPACKING', 'CONFIGURING', 'DONE'],
-      ADMIN: ALL_STATUSES,
+      SALES:          ['DRAFT', 'PENDING_APPROVAL'],
+      BRANCH_MANAGER: ['PENDING_APPROVAL', 'TECHNICAL_CHECK'],
+      TECHNICAL_LEAD: ['TECHNICAL_CHECK', 'IN_WAREHOUSE'],
+      WAREHOUSE:      ['IN_WAREHOUSE', 'UNPACKING'],
+      TECHNICIAN:     ['UNPACKING', 'CONFIGURING', 'DELIVERY_NOTE'],
+      MANAGEMENT:     ['DELIVERY_NOTE', 'SCHEDULING', 'DONE'],
+      DISPATCHER:     ['SCHEDULING', 'DONE'],
+      ADMIN:          ALL_STATUSES,
     };
-    return (roleMap[user.role] || ALL_STATUSES).includes(s);
+    return (roleMap[user.role] ?? ALL_STATUSES).includes(s);
   });
 
   const byStatus = (status: RequestStatus) => requests.filter((r) => r.status === status);
@@ -127,8 +156,8 @@ export default function Dashboard() {
       )}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {ALL_STATUSES.map((status) => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {SUMMARY_STATUSES.map((status) => (
           <div key={status} className={`rounded-xl border p-4 transition-colors ${SUMMARY_BG[status]}`}>
             <p className={`text-2xl font-bold ${SUMMARY_TEXT[status]}`}>{summary[status] ?? 0}</p>
             <p className={`text-xs mt-0.5 font-medium ${SUMMARY_TEXT[status]} opacity-80`}>

@@ -1,5 +1,5 @@
-export type Role = 'SALES' | 'WAREHOUSE' | 'TECHNICIAN' | 'ADMIN' | 'MANAGEMENT';
-export type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'IN_WAREHOUSE' | 'UNPACKING' | 'CONFIGURING' | 'DONE';
+export type Role = 'SALES' | 'WAREHOUSE' | 'TECHNICIAN' | 'ADMIN' | 'MANAGEMENT' | 'BRANCH_MANAGER' | 'TECHNICAL_LEAD' | 'DISPATCHER';
+export type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'PENDING_APPROVAL' | 'TECHNICAL_CHECK' | 'IN_WAREHOUSE' | 'UNPACKING' | 'CONFIGURING' | 'DELIVERY_NOTE' | 'SCHEDULING' | 'DONE' | 'ARCHIVED';
 
 export interface User {
   id: string;
