@@ -33,23 +33,23 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-brand-900 to-brand-800 dark:from-slate-950 dark:via-slate-900 dark:to-brand-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-white/10 backdrop-blur rounded-2xl mb-4">
-            <Cpu className="w-7 h-7 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-4 ring-1 ring-white/20 shadow-xl">
+            <Cpu className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white">Auftragsverwaltung</h1>
-          <p className="text-brand-200 mt-1 text-sm">Auftragsmanagement für Kopierer & Drucker</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Auftragsverwaltung</h1>
+          <p className="text-brand-200 dark:text-slate-400 mt-1.5 text-sm">Auftragsmanagement für Kopierer & Drucker</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-2xl shadow-brand-900/30 p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Anmelden</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl shadow-black/30 p-8 border border-white/10 dark:border-slate-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-6">Anmelden</h2>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">
               {error}
             </div>
           )}
@@ -81,7 +81,7 @@ export default function Login() {
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -100,7 +100,6 @@ export default function Login() {
               )}
             </button>
           </form>
-
         </div>
       </div>
     </div>

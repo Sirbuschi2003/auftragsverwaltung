@@ -17,21 +17,21 @@ const STATUS_COLORS: Record<RequestStatus, string> = {
 };
 
 const SUMMARY_BG: Record<RequestStatus, string> = {
-  DRAFT: 'bg-gray-50 border-gray-200',
-  SUBMITTED: 'bg-blue-50 border-blue-200',
-  IN_WAREHOUSE: 'bg-yellow-50 border-yellow-200',
-  UNPACKING: 'bg-orange-50 border-orange-200',
-  CONFIGURING: 'bg-purple-50 border-purple-200',
-  DONE: 'bg-green-50 border-green-200',
+  DRAFT: 'bg-gray-50 dark:bg-slate-800/60 border-gray-200 dark:border-slate-700',
+  SUBMITTED: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900',
+  IN_WAREHOUSE: 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900',
+  UNPACKING: 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900',
+  CONFIGURING: 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900',
+  DONE: 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900',
 };
 
 const SUMMARY_TEXT: Record<RequestStatus, string> = {
-  DRAFT: 'text-gray-700',
-  SUBMITTED: 'text-blue-700',
-  IN_WAREHOUSE: 'text-yellow-700',
-  UNPACKING: 'text-orange-700',
-  CONFIGURING: 'text-purple-700',
-  DONE: 'text-green-700',
+  DRAFT: 'text-gray-700 dark:text-slate-300',
+  SUBMITTED: 'text-blue-700 dark:text-blue-400',
+  IN_WAREHOUSE: 'text-yellow-700 dark:text-yellow-400',
+  UNPACKING: 'text-orange-700 dark:text-orange-400',
+  CONFIGURING: 'text-purple-700 dark:text-purple-400',
+  DONE: 'text-green-700 dark:text-green-400',
 };
 
 function RequestCard({ request, onClick }: { request: MachineRequest; onClick: () => void }) {
@@ -41,23 +41,23 @@ function RequestCard({ request, onClick }: { request: MachineRequest; onClick: (
   return (
     <button
       onClick={onClick}
-      className="w-full text-left bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-200 transition-all p-4 group"
+      className="w-full text-left bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md dark:hover:shadow-slate-900/50 hover:border-brand-200 dark:hover:border-brand-500/40 transition-all duration-200 p-4 group"
     >
       <div className="flex items-start justify-between gap-2 mb-3">
-        <span className="text-xs font-mono font-semibold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md">
+        <span className="text-xs font-mono font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-600/15 px-2 py-0.5 rounded-md">
           {request.requestNumber}
         </span>
         <StatusBadge status={request.status} size="sm" />
       </div>
-      <p className="text-sm font-semibold text-gray-900 mb-0.5 group-hover:text-brand-700 transition-colors">
+      <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-0.5 group-hover:text-brand-700 dark:group-hover:text-brand-400 transition-colors">
         {request.customer.companyName}
       </p>
-      <p className="text-xs text-gray-500 mb-2">{request.machineModel.modelName}</p>
-      <div className="flex items-center justify-between text-xs text-gray-400">
+      <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">{request.machineModel.modelName}</p>
+      <div className="flex items-center justify-between text-xs text-gray-400 dark:text-slate-500">
         <span>{request.customerSite.city}</span>
         <span>{date}</span>
       </div>
-      <div className="mt-2 pt-2 border-t border-gray-50 text-xs text-gray-400">
+      <div className="mt-2 pt-2 border-t border-gray-50 dark:border-slate-700 text-xs text-gray-400 dark:text-slate-500">
         {request.salesRep.name}
       </div>
     </button>
@@ -111,11 +111,10 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Übersicht</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Alle Maschinenanfragen im Überblick</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Übersicht</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Alle Maschinenanfragen im Überblick</p>
         </div>
         <button onClick={load} className="btn-secondary">
           <RefreshCw className="w-4 h-4" />
@@ -124,13 +123,13 @@ export default function Dashboard() {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">{error}</div>
+        <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-xl text-sm text-red-600 dark:text-red-400">{error}</div>
       )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {ALL_STATUSES.map((status) => (
-          <div key={status} className={`rounded-xl border p-4 ${SUMMARY_BG[status]}`}>
+          <div key={status} className={`rounded-xl border p-4 transition-colors ${SUMMARY_BG[status]}`}>
             <p className={`text-2xl font-bold ${SUMMARY_TEXT[status]}`}>{summary[status] ?? 0}</p>
             <p className={`text-xs mt-0.5 font-medium ${SUMMARY_TEXT[status]} opacity-80`}>
               {STATUS_LABELS[status]}
@@ -146,16 +145,16 @@ export default function Dashboard() {
             const cards = byStatus(status);
             return (
               <div key={status} className="w-72 flex-shrink-0">
-                <div className={`bg-white rounded-xl border-t-4 border border-gray-100 shadow-sm ${STATUS_COLORS[status]}`}>
-                  <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
+                <div className={`bg-white dark:bg-slate-800/80 rounded-xl border-t-4 border border-gray-100 dark:border-slate-700 shadow-sm ${STATUS_COLORS[status]}`}>
+                  <div className="px-4 py-3 border-b border-gray-50 dark:border-slate-700 flex items-center justify-between">
                     <StatusBadge status={status} />
-                    <span className="text-xs font-semibold text-gray-400 bg-gray-100 rounded-full w-6 h-6 flex items-center justify-center">
+                    <span className="text-xs font-semibold text-gray-400 dark:text-slate-500 bg-gray-100 dark:bg-slate-700 rounded-full w-6 h-6 flex items-center justify-center">
                       {cards.length}
                     </span>
                   </div>
                   <div className="p-3 space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto">
                     {cards.length === 0 ? (
-                      <p className="text-xs text-gray-400 text-center py-6">Keine Anfragen</p>
+                      <p className="text-xs text-gray-400 dark:text-slate-500 text-center py-6">Keine Anfragen</p>
                     ) : (
                       cards.map((req) => (
                         <RequestCard

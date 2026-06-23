@@ -12,12 +12,32 @@ const ROLE_LABELS: Record<Role, string> = {
   MANAGEMENT: 'Leitung',
 };
 
-// ─── Generic Confirm Dialog ─────────────────────────────────────────────────
+// ─── Modal ───────────────────────────────────────────────────────────────────
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-100 dark:border-slate-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex-shrink-0">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-slate-100">{title}</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto space-y-4">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Generic Confirm Dialog ──────────────────────────────────────────────────
 function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onConfirm: () => void; onCancel: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-        <p className="text-sm text-gray-700 mb-5">{message}</p>
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 max-w-sm w-full border border-gray-100 dark:border-slate-700">
+        <p className="text-sm text-gray-700 dark:text-slate-300 mb-5">{message}</p>
         <div className="flex gap-2 justify-end">
           <button className="btn-secondary" onClick={onCancel}>Abbrechen</button>
           <button className="btn-danger" onClick={onConfirm}>Löschen</button>
@@ -44,14 +64,7 @@ function UsersTab() {
     try {
       const e = editing as any;
       if (isNew) {
-        await api.salesReps.create({
-          username: e.username,
-          firstName: e.firstName,
-          lastName: e.lastName,
-          email: e.email,
-          password: e.password,
-          role: e.role,
-        });
+        await api.salesReps.create({ username: e.username, firstName: e.firstName, lastName: e.lastName, email: e.email, password: e.password, role: e.role });
       } else {
         await api.salesReps.update(editing.id!, editing);
       }
@@ -63,41 +76,17 @@ function UsersTab() {
   };
 
   const del = async (id: string) => {
-    try {
-      await api.salesReps.delete(id);
-      load();
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Fehler.');
-    } finally {
-      setDeleteId(null);
-    }
+    try { await api.salesReps.delete(id); load(); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : 'Fehler.'); }
+    finally { setDeleteId(null); }
   };
 
   return (
     <div className="space-y-4">
-      {deleteId && (
-        <ConfirmDialog
-          message="Benutzer wirklich löschen?"
-          onConfirm={() => del(deleteId)}
-          onCancel={() => setDeleteId(null)}
-        />
-      )}
-      {error && !editing && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
-      )}
-
-      <div className="flex justify-end">
-        <button
-          className="btn-primary"
-          onClick={() => { setEditing({ role: 'SALES' }); setIsNew(true); setError(''); }}
-        >
-          <Plus className="w-4 h-4" /> Benutzer hinzufügen
-        </button>
-      </div>
+      {deleteId && <ConfirmDialog message="Benutzer wirklich löschen?" onConfirm={() => del(deleteId)} onCancel={() => setDeleteId(null)} />}
 
       {editing && (
-        <div className="card p-5 space-y-3">
-          <h3 className="text-sm font-semibold text-gray-900">{isNew ? 'Neuer Benutzer' : 'Benutzer bearbeiten'}</h3>
+        <Modal title={isNew ? 'Neuer Benutzer' : 'Benutzer bearbeiten'} onClose={() => { setEditing(null); setError(''); }}>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Vorname</label>
@@ -122,54 +111,57 @@ function UsersTab() {
             <div>
               <label className="label">Rolle</label>
               <select className="input" value={editing.role || 'SALES'} onChange={(e) => setEditing((p) => ({ ...p, role: e.target.value as Role }))}>
-                {Object.entries(ROLE_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
+                {Object.entries(ROLE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex gap-2 justify-end">
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <div className="flex gap-2 justify-end pt-2 border-t border-gray-100 dark:border-slate-700">
             <button className="btn-secondary" onClick={() => { setEditing(null); setError(''); }}><X className="w-4 h-4" /> Abbrechen</button>
             <button className="btn-primary" onClick={save}><Check className="w-4 h-4" /> Speichern</button>
           </div>
-        </div>
+        </Modal>
       )}
+
+      {error && !editing && (
+        <p className="text-sm text-red-600 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-lg px-3 py-2">{error}</p>
+      )}
+
+      <div className="flex justify-end">
+        <button className="btn-primary" onClick={() => { setEditing({ role: 'SALES' }); setIsNew(true); setError(''); }}>
+          <Plus className="w-4 h-4" /> Benutzer hinzufügen
+        </button>
+      </div>
 
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 dark:bg-slate-700/50">
             <tr>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Benutzername</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">E-Mail</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Rolle</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Name</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Benutzername</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">E-Mail</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Rolle</th>
               <th className="w-20" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-gray-50 dark:divide-slate-700/50">
             {users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 font-medium text-gray-900">{(u as any).firstName} {(u as any).lastName}</td>
-                <td className="px-4 py-3 text-gray-500 font-mono text-xs">{(u as any).username}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{u.email || '—'}</td>
+              <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">{(u as any).firstName} {(u as any).lastName}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-slate-400 font-mono text-xs">{(u as any).username}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-xs">{u.email || '—'}</td>
                 <td className="px-4 py-3">
-                  <span className="text-xs bg-brand-50 text-brand-700 px-2 py-0.5 rounded-full font-medium">
+                  <span className="text-xs bg-brand-50 dark:bg-brand-600/15 text-brand-700 dark:text-brand-400 px-2 py-0.5 rounded-full font-medium">
                     {ROLE_LABELS[u.role]}
                   </span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 justify-end">
-                    <button
-                      className="text-gray-400 hover:text-brand-600 transition-colors p-1"
-                      onClick={() => { setEditing({ ...u }); setIsNew(false); setError(''); }}
-                    >
+                    <button className="text-gray-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors p-1 rounded"
+                      onClick={() => { setEditing({ ...u }); setIsNew(false); setError(''); }}>
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button
-                      className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                      onClick={() => setDeleteId(u.id)}
-                    >
+                    <button className="text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors p-1 rounded" onClick={() => setDeleteId(u.id)}>
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -197,35 +189,22 @@ function ModelsTab() {
   useEffect(() => { load(); }, [load]);
   useEffect(() => { api.accessories.getAll().then(setAllAccessories); }, []);
 
-  const openNew = () => {
-    setEditing({});
-    setSelectedAccessoryIds([]);
-    setIsNew(true);
-    setError('');
-  };
-
+  const openNew = () => { setEditing({}); setSelectedAccessoryIds([]); setIsNew(true); setError(''); };
   const openEdit = (item: MachineModel) => {
     setEditing({ ...item });
     setSelectedAccessoryIds((item.compatibleAccessories ?? []).map((a) => a.id));
     setIsNew(false);
     setError('');
   };
-
-  const toggleAcc = (id: string) => {
-    setSelectedAccessoryIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
+  const toggleAcc = (id: string) =>
+    setSelectedAccessoryIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
 
   const save = async () => {
     if (!editing) return;
     setError('');
     try {
-      if (isNew) {
-        await api.machineModels.create({ ...editing, accessoryIds: selectedAccessoryIds });
-      } else {
-        await api.machineModels.update(editing.id!, { ...editing, accessoryIds: selectedAccessoryIds });
-      }
+      if (isNew) { await api.machineModels.create({ ...editing, accessoryIds: selectedAccessoryIds }); }
+      else { await api.machineModels.update(editing.id!, { ...editing, accessoryIds: selectedAccessoryIds }); }
       setEditing(null);
       load();
     } catch (e: unknown) {
@@ -242,14 +221,9 @@ function ModelsTab() {
   return (
     <div className="space-y-4">
       {deleteId && <ConfirmDialog message="Modell wirklich löschen?" onConfirm={() => del(deleteId)} onCancel={() => setDeleteId(null)} />}
-      <div className="flex justify-end">
-        <button className="btn-primary" onClick={openNew}>
-          <Plus className="w-4 h-4" /> Modell hinzufügen
-        </button>
-      </div>
+
       {editing && (
-        <div className="card p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-gray-900">{isNew ? 'Neues Modell' : 'Modell bearbeiten'}</h3>
+        <Modal title={isNew ? 'Neues Maschinenmodell' : 'Modell bearbeiten'} onClose={() => setEditing(null)}>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Hersteller</label>
@@ -259,37 +233,42 @@ function ModelsTab() {
               <label className="label">Modellname</label>
               <input className="input" value={editing.modelName || ''} onChange={(e) => setEditing((p) => ({ ...p, modelName: e.target.value }))} />
             </div>
-          </div>
-          <div>
-            <label className="label">Beschreibung</label>
-            <input className="input" value={editing.description || ''} onChange={(e) => setEditing((p) => ({ ...p, description: e.target.value }))} />
+            <div className="col-span-2">
+              <label className="label">Beschreibung</label>
+              <input className="input" value={editing.description || ''} onChange={(e) => setEditing((p) => ({ ...p, description: e.target.value }))} />
+            </div>
           </div>
 
           {/* Compatible accessories */}
           <div>
             <label className="label">Kompatibles Zubehör</label>
             {allAccessories.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">Noch kein Zubehör angelegt.</p>
+              <p className="text-sm text-gray-400 dark:text-slate-500 italic">Noch kein Zubehör angelegt.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-2 mt-1">
+              <div className="grid grid-cols-2 gap-2 mt-1 max-h-48 overflow-y-auto pr-1">
                 {allAccessories.map((acc) => (
                   <label
                     key={acc.id}
                     className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${
                       selectedAccessoryIds.includes(acc.id)
-                        ? 'bg-brand-50 border-brand-200'
-                        : 'bg-white border-gray-100 hover:border-gray-200'
+                        ? 'bg-brand-50 dark:bg-brand-600/15 border-brand-200 dark:border-brand-500/40'
+                        : 'bg-white dark:bg-slate-700/40 border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600'
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={selectedAccessoryIds.includes(acc.id)}
                       onChange={() => toggleAcc(acc.id)}
-                      className="w-4 h-4 text-brand-600 rounded border-gray-300"
+                      className="w-4 h-4 text-brand-600 rounded border-gray-300 dark:border-slate-600 flex-shrink-0"
                     />
-                    <span className="text-sm text-gray-800 leading-tight">{acc.name}</span>
+                    <div className="min-w-0">
+                      {acc.code && (
+                        <span className="font-mono text-xs font-bold text-brand-600 dark:text-brand-400 block">{acc.code}</span>
+                      )}
+                      <span className="text-xs text-gray-700 dark:text-slate-300 leading-tight block truncate">{acc.name}</span>
+                    </div>
                     {acc.hasSerialNumber && (
-                      <span className="ml-auto text-xs text-purple-500 bg-purple-50 px-1 py-0.5 rounded flex-shrink-0">S/N</span>
+                      <span className="ml-auto text-xs text-purple-500 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/30 px-1 py-0.5 rounded flex-shrink-0">S/N</span>
                     )}
                   </label>
                 ))}
@@ -299,13 +278,13 @@ function ModelsTab() {
 
           {/* Image uploads — only shown when editing existing model */}
           {!isNew && editing.id && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100 dark:border-slate-700">
               <div>
                 <label className="label">Produktbild</label>
                 {editing.imagePath && (
-                  <img src={editing.imagePath} alt="" className="w-24 h-24 object-contain rounded-lg border mb-2" />
+                  <img src={editing.imagePath} alt="" className="w-24 h-24 object-contain rounded-lg border dark:border-slate-700 mb-2 bg-gray-50 dark:bg-slate-700 p-1" />
                 )}
-                <input type="file" accept="image/*" className="text-sm text-gray-600" onChange={async (e) => {
+                <input type="file" accept="image/*" className="text-sm text-gray-600 dark:text-slate-400" onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file || !editing.id) return;
                   try {
@@ -318,9 +297,9 @@ function ModelsTab() {
               <div>
                 <label className="label">Hersteller-Logo</label>
                 {(editing as any).manufacturerLogoPath && (
-                  <img src={(editing as any).manufacturerLogoPath} alt="" className="h-10 object-contain rounded-lg border mb-2" />
+                  <img src={(editing as any).manufacturerLogoPath} alt="" className="h-10 object-contain rounded-lg border dark:border-slate-700 mb-2 bg-gray-50 dark:bg-slate-700 p-1" />
                 )}
-                <input type="file" accept="image/*" className="text-sm text-gray-600" onChange={async (e) => {
+                <input type="file" accept="image/*" className="text-sm text-gray-600 dark:text-slate-400" onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file || !editing.id) return;
                   try {
@@ -333,48 +312,53 @@ function ModelsTab() {
             </div>
           )}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex gap-2 justify-end">
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <div className="flex gap-2 justify-end pt-2 border-t border-gray-100 dark:border-slate-700">
             <button className="btn-secondary" onClick={() => setEditing(null)}><X className="w-4 h-4" /> Abbrechen</button>
             <button className="btn-primary" onClick={save}><Check className="w-4 h-4" /> Speichern</button>
           </div>
-        </div>
+        </Modal>
       )}
+
+      <div className="flex justify-end">
+        <button className="btn-primary" onClick={openNew}><Plus className="w-4 h-4" /> Modell hinzufügen</button>
+      </div>
+
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {items.map((item) => (
-          <div key={item.id} className="card p-4 flex flex-col gap-3 hover:shadow-md transition-shadow relative">
+          <div key={item.id} className="card p-4 flex flex-col gap-3 hover:shadow-md dark:hover:shadow-slate-900/50 transition-all duration-200 relative group">
             {/* Manufacturer logo top-right */}
             {item.manufacturerLogoPath && (
-              <img src={item.manufacturerLogoPath} alt="" className="absolute top-3 right-3 h-5 object-contain opacity-70" />
+              <img src={item.manufacturerLogoPath} alt="" className="absolute top-3 right-3 h-5 object-contain opacity-60 dark:opacity-40 dark:invert" />
             )}
             {/* Product image */}
-            <div className="flex items-center justify-center h-24 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-center h-24 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
               {item.imagePath
                 ? <img src={item.imagePath} alt={item.modelName} className="h-20 w-full object-contain" />
-                : <div className="text-gray-200 text-3xl font-bold select-none">{(item.manufacturer || item.modelName).charAt(0)}</div>}
+                : <div className="text-gray-200 dark:text-slate-600 text-3xl font-bold select-none">{(item.manufacturer || item.modelName).charAt(0)}</div>}
             </div>
             {/* Text */}
             <div className="min-w-0 flex-1">
-              {item.manufacturer && <p className="text-xs text-gray-400 font-medium truncate">{item.manufacturer}</p>}
-              <p className="text-sm font-semibold text-gray-900 leading-tight truncate">{item.modelName}</p>
-              {item.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{item.description}</p>}
+              {item.manufacturer && <p className="text-xs text-gray-400 dark:text-slate-500 font-medium truncate">{item.manufacturer}</p>}
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 leading-tight truncate">{item.modelName}</p>
+              {item.description && <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 line-clamp-2">{item.description}</p>}
               {(item.compatibleAccessories ?? []).length > 0 && (
-                <p className="text-xs text-brand-600 mt-1">{(item.compatibleAccessories ?? []).length} Zubehör</p>
+                <p className="text-xs text-brand-600 dark:text-brand-400 mt-1">{(item.compatibleAccessories ?? []).length} Zubehör</p>
               )}
             </div>
             {/* Actions */}
-            <div className="flex gap-1 justify-end border-t border-gray-100 pt-2">
-              <button className="text-gray-400 hover:text-brand-600 transition-colors p-1" onClick={() => openEdit(item)} title="Bearbeiten">
+            <div className="flex gap-1 justify-end border-t border-gray-100 dark:border-slate-700 pt-2">
+              <button className="text-gray-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-600/15" onClick={() => openEdit(item)} title="Bearbeiten">
                 <Pencil className="w-4 h-4" />
               </button>
-              <button className="text-gray-400 hover:text-red-500 transition-colors p-1" onClick={() => setDeleteId(item.id)} title="Löschen">
+              <button className="text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20" onClick={() => setDeleteId(item.id)} title="Löschen">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
           </div>
         ))}
         {items.length === 0 && (
-          <div className="col-span-full text-center py-10 text-sm text-gray-400 italic">Noch keine Maschinenmodelle angelegt.</div>
+          <div className="col-span-full text-center py-10 text-sm text-gray-400 dark:text-slate-500 italic">Noch keine Maschinenmodelle angelegt.</div>
         )}
       </div>
     </div>
@@ -395,13 +379,7 @@ function AccessoriesTab() {
   useEffect(() => { load(); }, [load]);
   useEffect(() => { api.machineModels.getAll().then(setAllModels); }, []);
 
-  const openNew = () => {
-    setEditing({ hasSerialNumber: false });
-    setSelectedModelIds([]);
-    setIsNew(true);
-    setError('');
-  };
-
+  const openNew = () => { setEditing({ hasSerialNumber: false }); setSelectedModelIds([]); setIsNew(true); setError(''); };
   const openEdit = (item: Accessory) => {
     setEditing({ ...item });
     setSelectedModelIds((item.compatibleModels ?? []).map((m) => m.id));
@@ -434,26 +412,21 @@ function AccessoriesTab() {
   return (
     <div className="space-y-4">
       {deleteId && <ConfirmDialog message="Zubehör wirklich löschen?" onConfirm={() => del(deleteId)} onCancel={() => setDeleteId(null)} />}
-      {error && !editing && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
-      <div className="flex justify-end">
-        <button className="btn-primary" onClick={openNew}>
-          <Plus className="w-4 h-4" /> Zubehör hinzufügen
-        </button>
-      </div>
+      {error && !editing && <p className="text-sm text-red-600 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-lg px-3 py-2">{error}</p>}
+
       {editing && (
-        <div className="card p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-gray-900">{isNew ? 'Neues Zubehör' : 'Zubehör bearbeiten'}</h3>
+        <Modal title={isNew ? 'Neues Zubehör' : 'Zubehör bearbeiten'} onClose={() => { setEditing(null); setError(''); }}>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Bezeichnung (z.B. DESK-5005)</label>
-              <input className="input font-mono" placeholder="z.B. MR-3033" value={editing.code || ''} onChange={(e) => setEditing((p) => ({ ...p, code: e.target.value }))} />
+              <label className="label">Bezeichnung / Code (z.B. MR-3033)</label>
+              <input className="input font-mono" placeholder="z.B. MR-3033, DESK-5005" value={editing.code || ''} onChange={(e) => setEditing((p) => ({ ...p, code: e.target.value }))} />
             </div>
             <div>
-              <label className="label">Name</label>
+              <label className="label">Name / Beschreibung</label>
               <input className="input" value={editing.name || ''} onChange={(e) => setEditing((p) => ({ ...p, name: e.target.value }))} />
             </div>
-            <div>
-              <label className="label">Beschreibung / Art.-Nr.</label>
+            <div className="col-span-2">
+              <label className="label">Zusatzinfo / Art.-Nr.</label>
               <input className="input" value={editing.description || ''} onChange={(e) => setEditing((p) => ({ ...p, description: e.target.value }))} />
             </div>
           </div>
@@ -463,32 +436,34 @@ function AccessoriesTab() {
               id="hasSn"
               checked={editing.hasSerialNumber || false}
               onChange={(e) => setEditing((p) => ({ ...p, hasSerialNumber: e.target.checked }))}
-              className="w-4 h-4 text-brand-600 rounded border-gray-300"
+              className="w-4 h-4 text-brand-600 rounded border-gray-300 dark:border-slate-600"
             />
-            <label htmlFor="hasSn" className="text-sm text-gray-700">Seriennummer erforderlich</label>
+            <label htmlFor="hasSn" className="text-sm text-gray-700 dark:text-slate-300">Seriennummer erforderlich</label>
           </div>
 
           {/* Compatible machine models */}
           <div>
             <label className="label">Passt an folgende Maschinenmodelle</label>
             {allModels.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">Noch keine Maschinenmodelle angelegt.</p>
+              <p className="text-sm text-gray-400 dark:text-slate-500 italic">Noch keine Maschinenmodelle angelegt.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-2 mt-1">
+              <div className="grid grid-cols-2 gap-2 mt-1 max-h-48 overflow-y-auto pr-1">
                 {allModels.map((m) => (
                   <label
                     key={m.id}
                     className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${
-                      selectedModelIds.includes(m.id) ? 'bg-brand-50 border-brand-200' : 'bg-white border-gray-100 hover:border-gray-200'
+                      selectedModelIds.includes(m.id)
+                        ? 'bg-brand-50 dark:bg-brand-600/15 border-brand-200 dark:border-brand-500/40'
+                        : 'bg-white dark:bg-slate-700/40 border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600'
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={selectedModelIds.includes(m.id)}
                       onChange={() => toggleModel(m.id)}
-                      className="w-4 h-4 text-brand-600 rounded border-gray-300"
+                      className="w-4 h-4 text-brand-600 rounded border-gray-300 dark:border-slate-600"
                     />
-                    <span className="text-sm text-gray-800">{m.modelName}</span>
+                    <span className="text-sm text-gray-800 dark:text-slate-200 truncate">{m.modelName}</span>
                   </label>
                 ))}
               </div>
@@ -497,12 +472,12 @@ function AccessoriesTab() {
 
           {/* Image upload — only shown when editing existing item */}
           {!isNew && editing.id && (
-            <div>
+            <div className="pt-2 border-t border-gray-100 dark:border-slate-700">
               <label className="label">Produktbild</label>
               {editing.imagePath && (
-                <img src={editing.imagePath} alt="" className="w-24 h-24 object-contain rounded-lg border mb-2" />
+                <img src={editing.imagePath} alt="" className="w-24 h-24 object-contain rounded-lg border dark:border-slate-700 mb-2 bg-gray-50 dark:bg-slate-700 p-1" />
               )}
-              <input type="file" accept="image/*" className="text-sm text-gray-600" onChange={async (e) => {
+              <input type="file" accept="image/*" className="text-sm text-gray-600 dark:text-slate-400" onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file || !editing.id) return;
                 try {
@@ -514,61 +489,73 @@ function AccessoriesTab() {
             </div>
           )}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex gap-2 justify-end">
-            <button className="btn-secondary" onClick={() => setEditing(null)}><X className="w-4 h-4" /> Abbrechen</button>
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <div className="flex gap-2 justify-end pt-2 border-t border-gray-100 dark:border-slate-700">
+            <button className="btn-secondary" onClick={() => { setEditing(null); setError(''); }}><X className="w-4 h-4" /> Abbrechen</button>
             <button className="btn-primary" onClick={save}><Check className="w-4 h-4" /> Speichern</button>
           </div>
-        </div>
+        </Modal>
       )}
+
+      <div className="flex justify-end">
+        <button className="btn-primary" onClick={openNew}><Plus className="w-4 h-4" /> Zubehör hinzufügen</button>
+      </div>
+
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {items.map((item) => (
-          <div key={item.id} className="card p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+          <div key={item.id} className="card p-4 flex flex-col gap-3 hover:shadow-md dark:hover:shadow-slate-900/50 transition-all duration-200">
             {/* Product image */}
-            <div className="flex items-center justify-center h-20 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-center h-20 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
               {item.imagePath
                 ? <img src={item.imagePath} alt={item.name} className="h-16 w-full object-contain" />
-                : <div className="text-gray-200 text-3xl font-bold select-none">{item.name.charAt(0)}</div>}
+                : <div className="text-gray-200 dark:text-slate-600 text-3xl font-bold select-none">{item.name.charAt(0)}</div>}
             </div>
             {/* Text */}
             <div className="min-w-0 flex-1 space-y-1">
-              <div className="flex items-start gap-1.5 flex-wrap">
-                {item.code && (
-                  <span className="font-mono text-xs font-semibold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">{item.code}</span>
-                )}
-                {item.hasSerialNumber && (
-                  <span className="text-xs bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded font-medium shrink-0">S/N</span>
-                )}
-              </div>
-              <p className="text-sm font-semibold text-gray-900 leading-tight">{item.name}</p>
-              {item.description && <p className="text-xs text-gray-400 line-clamp-2">{item.description}</p>}
+              {/* Code / Bezeichnung — prominent */}
+              {item.code ? (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-mono text-sm font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-600/15 px-2 py-0.5 rounded-md border border-brand-100 dark:border-brand-500/30">
+                    {item.code}
+                  </span>
+                  {item.hasSerialNumber && (
+                    <span className="text-xs bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-medium">S/N</span>
+                  )}
+                </div>
+              ) : (
+                item.hasSerialNumber && (
+                  <span className="text-xs bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-medium">S/N</span>
+                )
+              )}
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 leading-tight">{item.name}</p>
+              {item.description && <p className="text-xs text-gray-400 dark:text-slate-500 line-clamp-2">{item.description}</p>}
               {(item.compatibleModels ?? []).length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1">
                   {(item.compatibleModels ?? []).slice(0, 2).map((m) => (
-                    <span key={m.id} className="text-xs bg-brand-50 text-brand-700 px-1.5 py-0.5 rounded-full truncate max-w-[100px]">{m.modelName}</span>
+                    <span key={m.id} className="text-xs bg-brand-50 dark:bg-brand-600/15 text-brand-700 dark:text-brand-400 px-1.5 py-0.5 rounded-full truncate max-w-[100px]">{m.modelName}</span>
                   ))}
                   {(item.compatibleModels ?? []).length > 2 && (
-                    <span className="text-xs text-gray-400">+{(item.compatibleModels ?? []).length - 2}</span>
+                    <span className="text-xs text-gray-400 dark:text-slate-500">+{(item.compatibleModels ?? []).length - 2}</span>
                   )}
                 </div>
               )}
               {(item.compatibleModels ?? []).length === 0 && (
-                <p className="text-xs text-gray-400 italic">Universell</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500 italic">Universell</p>
               )}
             </div>
             {/* Actions */}
-            <div className="flex gap-1 justify-end border-t border-gray-100 pt-2">
-              <button className="text-gray-400 hover:text-brand-600 transition-colors p-1" onClick={() => openEdit(item)} title="Bearbeiten">
+            <div className="flex gap-1 justify-end border-t border-gray-100 dark:border-slate-700 pt-2">
+              <button className="text-gray-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors p-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-600/15" onClick={() => openEdit(item)} title="Bearbeiten">
                 <Pencil className="w-4 h-4" />
               </button>
-              <button className="text-gray-400 hover:text-red-500 transition-colors p-1" onClick={() => setDeleteId(item.id)} title="Löschen">
+              <button className="text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20" onClick={() => setDeleteId(item.id)} title="Löschen">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
           </div>
         ))}
         {items.length === 0 && (
-          <div className="col-span-full text-center py-10 text-sm text-gray-400 italic">Noch kein Zubehör angelegt.</div>
+          <div className="col-span-full text-center py-10 text-sm text-gray-400 dark:text-slate-500 italic">Noch kein Zubehör angelegt.</div>
         )}
       </div>
     </div>
@@ -591,20 +578,14 @@ function ImportTab() {
 
   const toggleModel = (idx: number) =>
     setParsedModels((prev) => prev ? prev.map((m, i) => i === idx ? { ...m, selected: !m.selected } : m) : null);
-
   const toggleItem = (idx: number) =>
     setItems((prev) => prev ? prev.map((it, i) => i === idx ? { ...it, selected: !it.selected } : it) : null);
-
   const editName = (idx: number, name: string) =>
     setItems((prev) => prev ? prev.map((it, i) => i === idx ? { ...it, name } : it) : null);
 
   const parsePdf = async () => {
     if (!file) return;
-    setParsing(true);
-    setError('');
-    setResult('');
-    setItems(null);
-    setParsedModels(null);
+    setParsing(true); setError(''); setResult(''); setItems(null); setParsedModels(null);
     try {
       const data = await api.import.parsePdf(file);
       setDetectedManufacturer(data.manufacturer);
@@ -619,14 +600,11 @@ function ImportTab() {
 
   const doImport = async () => {
     if (!items || !parsedModels) return;
-    setImporting(true);
-    setError('');
+    setImporting(true); setError('');
     try {
       const res = await api.import.confirm({ accessories: items, machineModels: parsedModels });
       setResult(res.message);
-      setItems(null);
-      setParsedModels(null);
-      setFile(null);
+      setItems(null); setParsedModels(null); setFile(null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Fehler beim Importieren.');
     } finally {
@@ -640,74 +618,65 @@ function ImportTab() {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-sm font-semibold text-gray-900">Hersteller-PDF importieren</h2>
-        <p className="text-xs text-gray-500 mt-0.5">Maschinenmodelle und Zubehör werden automatisch aus dem Konfigurationsdokument ausgelesen. Verbrauchsmaterialien (Toner, Entwickler, Trommel) werden übersprungen.</p>
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Hersteller-PDF importieren</h2>
+        <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Maschinenmodelle und Zubehör werden automatisch aus dem Konfigurationsdokument ausgelesen.</p>
       </div>
 
-      {result && (
-        <div className="p-3 bg-green-50 border border-green-100 rounded-xl text-sm text-green-800 font-medium">{result}</div>
-      )}
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">{error}</div>
-      )}
+      {result && <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-100 dark:border-green-900 rounded-xl text-sm text-green-800 dark:text-green-400 font-medium">{result}</div>}
+      {error && <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-xl text-sm text-red-600 dark:text-red-400">{error}</div>}
 
-      {/* Step 1: upload PDF */}
       <div className="card p-5 space-y-3">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Schritt 1 — PDF hochladen</h3>
+        <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Schritt 1 — PDF hochladen</h3>
         <div className="flex gap-3 items-center">
           <label className="flex-1">
             <input type="file" accept="application/pdf" className="hidden"
               onChange={(e) => { setFile(e.target.files?.[0] ?? null); setItems(null); setParsedModels(null); setResult(''); }} />
-            <div className="input cursor-pointer text-gray-500 truncate">
+            <div className="input cursor-pointer text-gray-500 dark:text-slate-400 truncate">
               {file ? file.name : 'PDF-Datei auswählen…'}
             </div>
           </label>
           <button className="btn-primary whitespace-nowrap" onClick={parsePdf} disabled={!file || parsing}>
-            {parsing ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full inline-block mr-1" /> : null}
+            {parsing && <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full inline-block" />}
             {parsing ? 'Lese…' : 'PDF auslesen'}
           </button>
         </div>
       </div>
 
-      {/* Step 2 + 3: preview after parsing */}
       {parsedModels && items && (
         <div className="space-y-4">
-          {/* Machine models preview */}
           <div className="card p-5 space-y-3">
             <div className="flex items-center gap-3">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex-1">
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider flex-1">
                 Schritt 2 — Erkannte Maschinenmodelle ({selectedModCount} von {parsedModels.length} ausgewählt)
               </h3>
               {detectedManufacturer && (
-                <span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-1 rounded-full">
-                  Hersteller: {detectedManufacturer}
+                <span className="text-xs font-semibold bg-brand-50 dark:bg-brand-600/15 text-brand-700 dark:text-brand-400 px-2 py-1 rounded-full">
+                  {detectedManufacturer}
                 </span>
               )}
             </div>
             {parsedModels.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">Keine Maschinenmodelle im PDF erkannt.</p>
+              <p className="text-sm text-gray-400 dark:text-slate-500 italic">Keine Maschinenmodelle im PDF erkannt.</p>
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 {parsedModels.map((m, idx) => (
                   <label key={idx} className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-colors ${
-                    m.selected ? 'bg-brand-50 border-brand-200' : 'bg-gray-50 border-gray-100 opacity-50'
+                    m.selected ? 'bg-brand-50 dark:bg-brand-600/15 border-brand-200 dark:border-brand-500/40' : 'bg-gray-50 dark:bg-slate-700/30 border-gray-100 dark:border-slate-700 opacity-50'
                   }`}>
-                    <input type="checkbox" checked={m.selected} onChange={() => toggleModel(idx)}
-                      className="w-4 h-4 text-brand-600 rounded border-gray-300" />
-                    <span className="text-sm text-gray-800 flex-1">{m.name}</span>
+                    <input type="checkbox" checked={m.selected} onChange={() => toggleModel(idx)} className="w-4 h-4 text-brand-600 rounded border-gray-300 dark:border-slate-600" />
+                    <span className="text-sm text-gray-800 dark:text-slate-200 flex-1">{m.name}</span>
                     {m.existsAlready
-                      ? <span className="text-xs text-gray-400 italic">vorhanden</span>
-                      : <span className="text-xs text-green-600 font-medium">neu</span>}
+                      ? <span className="text-xs text-gray-400 dark:text-slate-500 italic">vorhanden</span>
+                      : <span className="text-xs text-green-600 dark:text-green-400 font-medium">neu</span>}
                   </label>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Accessories preview */}
           <div className="card p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                 Schritt 3 — Erkanntes Zubehör ({selectedAccCount} von {items.length} ausgewählt)
               </h3>
               <button className="btn-primary" onClick={doImport} disabled={importing || (selectedAccCount === 0 && selectedModCount === 0)}>
@@ -715,22 +684,21 @@ function ImportTab() {
               </button>
             </div>
             <div className="max-h-96 overflow-y-auto space-y-1">
-            {items.map((item, idx) => (
-              <div key={idx} className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${
-                item.selected ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-100 opacity-50'
-              }`}>
-                <input type="checkbox" checked={item.selected} onChange={() => toggleItem(idx)}
-                  className="w-4 h-4 text-brand-600 rounded border-gray-300 flex-shrink-0" />
-                <span className="text-xs font-mono text-gray-400 w-24 flex-shrink-0">{item.code}</span>
-                <input
-                  className="flex-1 text-sm text-gray-800 bg-transparent border-b border-transparent hover:border-gray-200 focus:border-brand-400 focus:outline-none px-1"
-                  value={item.name}
-                  onChange={(e) => editName(idx, e.target.value)}
-                  disabled={!item.selected}
-                />
-                <span className="text-xs text-gray-400 flex-shrink-0">{item.articleNumber}</span>
-              </div>
-            ))}
+              {items.map((item, idx) => (
+                <div key={idx} className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors ${
+                  item.selected ? 'bg-white dark:bg-slate-700/40 border-gray-200 dark:border-slate-600' : 'bg-gray-50 dark:bg-slate-800/50 border-gray-100 dark:border-slate-700 opacity-50'
+                }`}>
+                  <input type="checkbox" checked={item.selected} onChange={() => toggleItem(idx)} className="w-4 h-4 text-brand-600 rounded border-gray-300 dark:border-slate-600 flex-shrink-0" />
+                  <span className="text-xs font-mono text-gray-400 dark:text-slate-500 w-24 flex-shrink-0">{item.code}</span>
+                  <input
+                    className="flex-1 text-sm text-gray-800 dark:text-slate-200 bg-transparent border-b border-transparent hover:border-gray-200 dark:hover:border-slate-600 focus:border-brand-400 focus:outline-none px-1"
+                    value={item.name}
+                    onChange={(e) => editName(idx, e.target.value)}
+                    disabled={!item.selected}
+                  />
+                  <span className="text-xs text-gray-400 dark:text-slate-500 flex-shrink-0">{item.articleNumber}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -742,11 +710,7 @@ function ImportTab() {
 // ─── Site Form ───────────────────────────────────────────────────────────────
 const EMPTY_SITE: Partial<CustomerSite> = { siteName: '', street: '', zip: '', city: '', country: 'Deutschland', contactPerson: '', notes: '', isPrimary: false };
 
-function SiteForm({ site, onSave, onCancel }: {
-  site: Partial<CustomerSite>;
-  onSave: (data: Partial<CustomerSite>) => Promise<void>;
-  onCancel: () => void;
-}) {
+function SiteForm({ site, onSave, onCancel }: { site: Partial<CustomerSite>; onSave: (data: Partial<CustomerSite>) => Promise<void>; onCancel: () => void }) {
   const [form, setForm] = useState<Partial<CustomerSite>>(site);
   const [error, setError] = useState('');
   const set = (k: keyof CustomerSite, v: string | boolean) => setForm((p) => ({ ...p, [k]: v }));
@@ -762,11 +726,11 @@ function SiteForm({ site, onSave, onCancel }: {
   };
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+    <div className="bg-gray-50 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-600 rounded-lg p-4 space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
           <label className="label">Standortname *</label>
-          <input className="input" placeholder="z.B. Hauptsitz, Filiale Nord …" value={form.siteName || ''} onChange={(e) => set('siteName', e.target.value)} />
+          <input className="input" placeholder="z.B. Hauptsitz, Filiale Nord…" value={form.siteName || ''} onChange={(e) => set('siteName', e.target.value)} />
         </div>
         <div className="col-span-2">
           <label className="label">Straße *</label>
@@ -787,15 +751,15 @@ function SiteForm({ site, onSave, onCancel }: {
         <div className="flex items-end pb-1">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={!!form.isPrimary} onChange={(e) => set('isPrimary', e.target.checked)} className="w-4 h-4 rounded accent-brand-600" />
-            <span className="text-sm text-gray-700">Hauptstandort</span>
+            <span className="text-sm text-gray-700 dark:text-slate-300">Hauptstandort</span>
           </label>
         </div>
         <div className="col-span-2">
           <label className="label">Weitere Notizen</label>
-          <textarea className="input" rows={2} placeholder="Anfahrt, Öffnungszeiten, besondere Hinweise …" value={form.notes || ''} onChange={(e) => set('notes', e.target.value)} />
+          <textarea className="input" rows={2} placeholder="Anfahrt, Öffnungszeiten, besondere Hinweise…" value={form.notes || ''} onChange={(e) => set('notes', e.target.value)} />
         </div>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex gap-2 justify-end">
         <button className="btn-secondary" onClick={onCancel}><X className="w-4 h-4" /> Abbrechen</button>
         <button className="btn-primary" onClick={submit}><Check className="w-4 h-4" /> Speichern</button>
@@ -868,8 +832,6 @@ function CustomersTab() {
     finally { setDeleteSiteId(null); }
   };
 
-  const expanded = customers.find((c) => c.id === expandedId);
-
   return (
     <div className="space-y-4">
       {deleteCustomerId && (
@@ -886,7 +848,7 @@ function CustomersTab() {
           onCancel={() => setDeleteSiteId(null)}
         />
       )}
-      {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
+      {error && <p className="text-sm text-red-600 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-lg px-3 py-2">{error}</p>}
 
       <div className="flex justify-end">
         <button className="btn-primary" onClick={() => { setEditingCustomer({}); setIsNew(true); setError(''); setExpandedId(null); }}>
@@ -897,7 +859,7 @@ function CustomersTab() {
       {/* New customer form */}
       {editingCustomer && isNew && (
         <div className="card p-5 space-y-3">
-          <h3 className="text-sm font-semibold text-gray-900">Neuer Kunde</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Neuer Kunde</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Kundennummer *</label>
@@ -916,7 +878,7 @@ function CustomersTab() {
               <input className="input" type="email" value={editingCustomer.email || ''} onChange={(e) => setEditingCustomer((p) => ({ ...p, email: e.target.value }))} />
             </div>
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           <div className="flex gap-2 justify-end">
             <button className="btn-secondary" onClick={() => { setEditingCustomer(null); setError(''); }}><X className="w-4 h-4" /> Abbrechen</button>
             <button className="btn-primary" onClick={saveCustomer}><Check className="w-4 h-4" /> Speichern & Standort hinzufügen</button>
@@ -926,29 +888,28 @@ function CustomersTab() {
 
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 dark:bg-slate-700/50">
             <tr>
               <th className="w-8" />
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Kundennr.</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Firma</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Kontakt</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Kundennr.</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Firma</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Kontakt</th>
               <th className="w-24" />
             </tr>
           </thead>
           <tbody>
             {customers.map((c) => (
               <>
-                <tr key={c.id} className="hover:bg-gray-50 border-t border-gray-100">
+                <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/30 border-t border-gray-100 dark:border-slate-700/50">
                   <td className="pl-3">
                     <button
-                      className="text-gray-400 hover:text-brand-600 transition-colors p-1"
+                      className="text-gray-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors p-1"
                       onClick={() => { setExpandedId(expandedId === c.id ? null : c.id); setAddingSite(false); setEditingSite(null); setEditingCustomer(null); }}
-                      title="Standorte anzeigen"
                     >
                       {expandedId === c.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-600">{c.customerNumber}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-600 dark:text-brand-400">{c.customerNumber}</td>
                   <td className="px-4 py-3">
                     {editingCustomer && !isNew && editingCustomer.id === c.id ? (
                       <div className="flex gap-2 items-center flex-wrap">
@@ -959,33 +920,34 @@ function CustomersTab() {
                         <button className="btn-secondary py-1 px-2 text-xs" onClick={() => setEditingCustomer(null)}><X className="w-3 h-3" /></button>
                       </div>
                     ) : (
-                      <span className="font-medium text-gray-900">{c.companyName}</span>
+                      <span className="font-medium text-gray-900 dark:text-slate-100">{c.companyName}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
+                  <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-xs">
                     {c.phone && <p>{c.phone}</p>}
                     {c.email && <p>{c.email}</p>}
-                    <p className="text-gray-400">{c.sites.length} Standort{c.sites.length !== 1 ? 'e' : ''}</p>
+                    <p className="text-gray-400 dark:text-slate-500">{c.sites.length} Standort{c.sites.length !== 1 ? 'e' : ''}</p>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end">
-                      <button className="text-gray-400 hover:text-brand-600 transition-colors p-1" title="Kundendaten bearbeiten" onClick={() => { setEditingCustomer({ ...c }); setIsNew(false); setError(''); }}>
+                      <button className="text-gray-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors p-1" onClick={() => { setEditingCustomer({ ...c }); setIsNew(false); setError(''); }}>
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button className="text-gray-400 hover:text-red-500 transition-colors p-1" onClick={() => setDeleteCustomerId(c.id)}>
+                      <button className="text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors p-1" onClick={() => setDeleteCustomerId(c.id)}>
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
                 </tr>
 
-                {/* Expanded sites panel */}
                 {expandedId === c.id && (
                   <tr key={`${c.id}-sites`}>
-                    <td colSpan={5} className="bg-blue-50/40 px-6 pb-4 pt-2">
+                    <td colSpan={5} className="bg-brand-50/30 dark:bg-brand-950/20 px-6 pb-4 pt-2 border-t border-brand-100 dark:border-brand-900/30">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1"><MapPin className="w-3 h-3" /> Standorte</span>
+                          <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                            <MapPin className="w-3 h-3" /> Standorte
+                          </span>
                           {!addingSite && !editingSite && (
                             <button className="btn-primary py-1 px-2 text-xs" onClick={() => { setAddingSite(true); setEditingSite(null); }}>
                               <Plus className="w-3 h-3" /> Standort hinzufügen
@@ -996,27 +958,23 @@ function CustomersTab() {
                         {c.sites.map((s) => (
                           <div key={s.id}>
                             {editingSite?.id === s.id ? (
-                              <SiteForm
-                                site={editingSite}
-                                onSave={(data) => updateSite(s.id, data)}
-                                onCancel={() => setEditingSite(null)}
-                              />
+                              <SiteForm site={editingSite} onSave={(data) => updateSite(s.id, data)} onCancel={() => setEditingSite(null)} />
                             ) : (
-                              <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-start justify-between gap-4">
+                              <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-4 py-3 flex items-start justify-between gap-4">
                                 <div className="space-y-0.5 min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <span className="font-medium text-gray-900 text-sm">{s.siteName}</span>
-                                    {s.isPrimary && <span className="text-xs bg-brand-100 text-brand-700 px-1.5 py-0.5 rounded-full font-medium">Hauptstandort</span>}
+                                    <span className="font-medium text-gray-900 dark:text-slate-100 text-sm">{s.siteName}</span>
+                                    {s.isPrimary && <span className="text-xs bg-brand-100 dark:bg-brand-600/20 text-brand-700 dark:text-brand-400 px-1.5 py-0.5 rounded-full font-medium">Hauptstandort</span>}
                                   </div>
-                                  <p className="text-xs text-gray-600">{s.street}, {s.zip} {s.city}</p>
-                                  {s.contactPerson && <p className="text-xs text-gray-500">Ansprechpartner: {s.contactPerson}</p>}
-                                  {s.notes && <p className="text-xs text-gray-400 italic">{s.notes}</p>}
+                                  <p className="text-xs text-gray-600 dark:text-slate-400">{s.street}, {s.zip} {s.city}</p>
+                                  {s.contactPerson && <p className="text-xs text-gray-500 dark:text-slate-500">Ansprechpartner: {s.contactPerson}</p>}
+                                  {s.notes && <p className="text-xs text-gray-400 dark:text-slate-500 italic">{s.notes}</p>}
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
-                                  <button className="text-gray-400 hover:text-brand-600 transition-colors p-1" onClick={() => { setEditingSite(s); setAddingSite(false); }}>
+                                  <button className="text-gray-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors p-1" onClick={() => { setEditingSite(s); setAddingSite(false); }}>
                                     <Pencil className="w-3.5 h-3.5" />
                                   </button>
-                                  <button className="text-gray-400 hover:text-red-500 transition-colors p-1" onClick={() => setDeleteSiteId(s.id)}>
+                                  <button className="text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors p-1" onClick={() => setDeleteSiteId(s.id)}>
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
@@ -1026,15 +984,11 @@ function CustomersTab() {
                         ))}
 
                         {c.sites.length === 0 && !addingSite && (
-                          <p className="text-xs text-gray-400 italic text-center py-2">Noch keine Standorte vorhanden.</p>
+                          <p className="text-xs text-gray-400 dark:text-slate-500 italic text-center py-2">Noch keine Standorte vorhanden.</p>
                         )}
 
                         {addingSite && (
-                          <SiteForm
-                            site={{ ...EMPTY_SITE, isPrimary: c.sites.length === 0 }}
-                            onSave={(data) => saveSite(c.id, data)}
-                            onCancel={() => setAddingSite(false)}
-                          />
+                          <SiteForm site={{ ...EMPTY_SITE, isPrimary: c.sites.length === 0 }} onSave={(data) => saveSite(c.id, data)} onCancel={() => setAddingSite(false)} />
                         )}
                       </div>
                     </td>
@@ -1049,7 +1003,7 @@ function CustomersTab() {
   );
 }
 
-// ─── Main Admin Page ─────────────────────────────────────────────────────────
+// ─── Main Admin Page ──────────────────────────────────────────────────────────
 const TABS: { id: Tab; label: string }[] = [
   { id: 'users', label: 'Benutzer' },
   { id: 'models', label: 'Maschinenmodelle' },
@@ -1064,12 +1018,11 @@ export default function Admin() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Verwaltung</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Stammdaten und Benutzerverwaltung</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Verwaltung</h1>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Stammdaten und Benutzerverwaltung</p>
       </div>
 
-      {/* Tab nav */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-slate-700">
         <nav className="flex gap-0 -mb-px">
           {TABS.map((tab) => (
             <button
@@ -1077,8 +1030,8 @@ export default function Admin() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? 'border-brand-600 text-brand-700'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-brand-600 text-brand-700 dark:text-brand-400 dark:border-brand-500'
+                  : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:border-gray-300 dark:hover:border-slate-600'
               }`}
             >
               {tab.label}

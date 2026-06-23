@@ -111,7 +111,7 @@ export const api = {
   customers: {
     lookup: (customerNumber: string) => request<Customer>(`/customers/lookup/${customerNumber}`),
     getAll: () => request<Customer[]>('/customers'),
-    create: (data: Partial<Customer> & { sites?: Partial<CustomerSite>[] }) =>
+    create: (data: Omit<Partial<Customer>, 'sites'> & { sites?: Partial<CustomerSite>[] }) =>
       request<Customer>('/customers', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<Customer>) =>
       request<Customer>(`/customers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
