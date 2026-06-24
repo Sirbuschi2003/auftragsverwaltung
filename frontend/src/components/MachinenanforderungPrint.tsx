@@ -11,9 +11,9 @@ const STANDARD_ZUBEHOER = [
   'DADF/RADF',
   'Finisher',
   'Ablage (KK)',
-  'Papier-Kassette',
-  'Papier-Kassette',
-  'Papier-Kassette',
+  'Papier-\nKassette',
+  'Papier-\nKassette',
+  'Papier-\nKassette',
   'Desk',
   'Aktiver KD',
   'Faxmodul',
@@ -27,10 +27,10 @@ const STANDARD_ZUBEHOER = [
 ];
 
 const PRUFLISTE_LEFT = [
-  'Belichtung – Vergrößerung/Verkleinerung/Foto',
+  'Belichtung - Vergrößerung/Verkleinerung/Foto',
   'Flächendeckung',
-  'Kopfanfänge – Kassetten/Duplex/ADF',
-  'Seitliche Ausrichtung – Kassetten/Duplex/ADF',
+  'Kopfanfänge - Kassetten/Duplex/ADF',
+  'Seitliche Ausrichtung - Kassetten/Duplex/ADF',
   'Ausleuchtung/Bildschärfe/Maßstab/Winkeligkeit',
   'Sauberkeit/Gehäusezustand',
   'Laufruhe',
@@ -39,9 +39,10 @@ const PRUFLISTE_LEFT = [
   'A3 Doppelzählung aktiviert',
   'CNT-Brücke',
   'Firmwareupdate Maschine/Optionen',
-  'Kundendaten gelöscht? HDD, E-Filing, Faxdaten, Einstellung',
+  'Kundendaten gelöscht? HDD, E-Filing, Faxdaten,',
   'Adressbuch, Templates, Netzw, Sicherungsdateien',
-  'PM-Liste gepflegt',
+  '',
+  'PM - Liste gepflegt',
 ];
 
 const PRUFLISTE_RIGHT = [
@@ -60,35 +61,32 @@ const PRUFLISTE_RIGHT = [
   'Einstellung Tonerbestellung telefonisch',
   'Aufkleber Tonerbestellung / Mail',
   '',
+  '',
 ];
 
-function Checkbox({ label, checked = false, bold = false }: { label?: string; checked?: boolean; bold?: boolean }) {
+const S = '1px solid #333';
+const SL = '1px solid #bbb';
+
+function Cb() {
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] ${bold ? 'font-bold' : ''}`}>
-      <span style={{
-        display: 'inline-block', width: 12, height: 12,
-        border: '1px solid #333', flexShrink: 0,
-        backgroundColor: checked ? '#222' : 'white',
-      }} />
-      {label && <span>{label}</span>}
-    </span>
+    <span style={{
+      display: 'inline-block', width: 11, height: 11,
+      border: S, verticalAlign: 'middle', flexShrink: 0,
+    }} />
   );
 }
 
-function Field({ label, value, width = 'auto' }: { label: string; value?: string; width?: string }) {
-  return (
-    <div style={{ width }} className="text-[10px]">
-      <span className="font-bold">{label}</span>
-      <div style={{ borderBottom: '1px solid #333', minHeight: 16, marginTop: 1 }}>
-        {value && <span className="text-[11px]">{value}</span>}
-      </div>
-    </div>
-  );
-}
+const td = (
+  content: React.ReactNode,
+  style: React.CSSProperties = {},
+  colSpan?: number,
+) => (
+  <td colSpan={colSpan} style={{ border: S, padding: '2px 4px', verticalAlign: 'top', fontSize: 9, ...style }}>
+    {content}
+  </td>
+);
 
-function Row({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`flex gap-3 items-start ${className}`}>{children}</div>;
-}
+const ERSATZ_ROWS = 13;
 
 export default function MachinenanforderungPrint({ request, onClose }: Props) {
   const printRef = useRef<HTMLDivElement>(null);
@@ -99,65 +97,43 @@ export default function MachinenanforderungPrint({ request, onClose }: Props) {
     const win = window.open('', '_blank', 'width=900,height=1200');
     if (!win) return;
     win.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>Maschinenanforderung ${request.requestNumber}</title>
-        <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: Arial, sans-serif; font-size: 10px; color: #000; background: white; }
-          @page { size: A4; margin: 10mm; }
-          .page { width: 190mm; min-height: 277mm; padding: 0; }
-          .page-break { page-break-after: always; }
-          table { border-collapse: collapse; width: 100%; }
-          td, th { border: 1px solid #333; padding: 2px 4px; font-size: 9px; vertical-align: top; }
-          .no-border td, .no-border th { border: none; }
-          .bold { font-weight: bold; }
-          .section-header { background: #e8e8e8; font-weight: bold; font-size: 10px; }
-          .checkbox-box { display: inline-block; width: 11px; height: 11px; border: 1px solid #333; vertical-align: middle; }
-          .underline-field { border-bottom: 1px solid #333; min-height: 14px; display: inline-block; }
-          .label { font-weight: bold; white-space: nowrap; }
-          .small { font-size: 8px; }
-          @media print { body { -webkit-print-color-adjust: exact; } }
-        </style>
-      </head>
-      <body>${content.innerHTML}</body>
-      </html>
+      <!DOCTYPE html><html><head>
+      <meta charset="utf-8"/>
+      <title>Maschinenanforderung ${request.requestNumber}</title>
+      <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:Arial,sans-serif;font-size:9px;color:#000;background:#fff}
+        @page{size:A4;margin:8mm}
+        table{border-collapse:collapse;width:100%}
+        td,th{border:1px solid #333;padding:2px 4px;font-size:9px;vertical-align:top}
+        .page2{page-break-before:always}
+        @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+      </style></head>
+      <body>${content.innerHTML}</body></html>
     `);
     win.document.close();
     setTimeout(() => { win.print(); }, 300);
   };
 
   const site = request.customerSite;
-  const customer = request.customer;
+  const cust = request.customer;
   const model = request.machineModel;
   const date = new Date(request.createdAt).toLocaleDateString('de-DE');
 
-  // Map request accessories to standard Zubehör rows
-  const accNames = request.accessories.map((a) => a.accessory.name.toLowerCase());
-  const matchStd = (label: string) => {
-    if (!label) return false;
-    return accNames.some((n) => n.includes(label.toLowerCase().split(/[\s/]/)[0].toLowerCase()));
-  };
-
-  // Remaining accessories (not matched to standard list) go into ersatzteil table
-  const ersatzteile = request.accessories.map((a) => ({
-    menge: String(a.quantity),
-    name: `${a.accessory.code ? a.accessory.code + ' ' : ''}${a.accessory.name}`,
-    artikelNr: a.serialNumber ?? '',
-  }));
+  // request.accessories go into the left Ersatzteil table (pre-filled)
+  const accs = request.accessories;
+  const leftRows = ERSATZ_ROWS;
 
   return (
     <>
-      {/* Preview modal */}
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 overflow-y-auto p-4">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-4 flex flex-col">
-          {/* Modal header */}
+
+          {/* Modal-Kopf */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 flex-shrink-0">
             <div>
               <h2 className="text-base font-semibold text-gray-900">Maschinenanforderung</h2>
-              <p className="text-xs text-gray-500">{request.requestNumber} · {customer.companyName}</p>
+              <p className="text-xs text-gray-500">{request.requestNumber} · {cust.companyName}</p>
             </div>
             <div className="flex items-center gap-2">
               <button className="btn-primary" onClick={handlePrint}>
@@ -169,351 +145,331 @@ export default function MachinenanforderungPrint({ request, onClose }: Props) {
             </div>
           </div>
 
-          {/* Print preview */}
+          {/* Druckvorschau */}
           <div className="overflow-y-auto p-6 bg-gray-100">
-            <div ref={printRef} style={{ background: 'white' }}>
+            <div ref={printRef} style={{ background: '#fff', fontFamily: 'Arial, sans-serif', color: '#000', fontSize: 9 }}>
 
-              {/* ═══════════════════════════════════════════════════════ PAGE 1 ═══ */}
-              <div style={{ width: '190mm', padding: '6mm', fontFamily: 'Arial, sans-serif', fontSize: 10, color: '#000' }}>
+              {/* ══════════════════ SEITE 1 ══════════════════ */}
+              <div style={{ width: '190mm', padding: '5mm' }}>
 
-                {/* Top header row */}
-                <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: 3 }}>
+                {/* Zeile 1: Eingang / Lieferung / Toner */}
+                <table style={{ marginBottom: 2 }}>
                   <tbody>
                     <tr>
-                      <td style={{ border: '1px solid #333', padding: '3px 5px', width: '28%', fontWeight: 'bold', fontSize: 10 }}>
-                        Eingang Technik
+                      <td style={{ border: S, padding: '2px 4px', width: '33%', fontWeight: 'bold', fontSize: 9 }}>
+                        Eingang Technik<br /><span style={{ display: 'inline-block', height: 12 }} />
                       </td>
-                      <td style={{ border: '1px solid #333', padding: '3px 5px', width: '28%', fontWeight: 'bold', fontSize: 10 }}>
-                        Lieferung geplant
+                      <td style={{ border: S, padding: '2px 4px', width: '33%', fontWeight: 'bold', fontSize: 9 }}>
+                        Lieferung geplant<br /><span style={{ display: 'inline-block', height: 12 }} />
                       </td>
-                      <td style={{ border: '1px solid #333', padding: '3px 5px', fontSize: 10 }}>
-                        Tonerbestellung per Mail &nbsp;
-                        <span style={{ display: 'inline-block', width: 11, height: 11, border: '1px solid #333', verticalAlign: 'middle' }} />
+                      <td style={{ border: S, padding: '2px 4px', fontSize: 9 }}>
+                        Tonerbestellung per Mail<br />
+                        <span style={{ display: 'inline-block', marginTop: 2 }}><Cb /></span>
                       </td>
                     </tr>
                   </tbody>
                 </table>
 
-                {/* Anforderung Nr. row */}
-                <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: 3 }}>
+                {/* Zeile 2: Anforderung Nr. / Weitere Systeme / Datum / Liefertermin */}
+                <table style={{ marginBottom: 3 }}>
                   <tbody>
                     <tr>
-                      <td style={{ border: '1px solid #333', padding: '3px 5px', width: '22%' }}>
-                        <span style={{ fontWeight: 'bold', fontSize: 11 }}>Anforderung Nr. {request.requestNumber}</span>
+                      <td style={{ border: S, padding: '3px 5px', width: '24%' }}>
+                        <span style={{ fontWeight: 'bold', fontSize: 11 }}>Anforderung Nr.{request.requestNumber}</span>
+                        <br /><span style={{ display: 'inline-block', height: 8 }} />
                       </td>
-                      <td style={{ border: '1px solid #333', padding: '3px 5px', width: '18%' }}>
-                        <span style={{ fontWeight: 'bold' }}>Weitere Systeme?</span>&nbsp;
-                        <span style={{ display: 'inline-block', width: 14, height: 14, border: '1px solid #333', verticalAlign: 'middle' }} />
+                      <td style={{ border: S, padding: '3px 5px', width: '18%' }}>
+                        <span style={{ fontWeight: 'bold' }}>Weitere Systeme?</span>
+                        <br /><Cb />
                       </td>
-                      <td style={{ border: '1px solid #333', padding: '3px 5px', width: '30%' }}>
-                        <span style={{ fontWeight: 'bold' }}>Anforderungsdatum:</span>&nbsp;
-                        <span>{date}</span>
+                      <td style={{ border: S, padding: '3px 5px', width: '30%' }}>
+                        <span style={{ fontWeight: 'bold' }}>Anforderungsdatum :</span>
+                        <br /><span>{date}</span>
                       </td>
-                      <td style={{ border: '1px solid #333', padding: '3px 5px' }}>
+                      <td style={{ border: S, padding: '3px 5px' }}>
                         <span style={{ fontWeight: 'bold' }}>Liefertermin Vertrieb</span>
+                        <br /><span style={{ display: 'inline-block', height: 8 }} />
                       </td>
                     </tr>
                   </tbody>
                 </table>
 
-                {/* Main two-column layout */}
-                <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                {/* Hauptbereich 2 Spalten */}
+                <table>
                   <tbody>
-                    <tr>
-                      {/* LEFT COLUMN */}
-                      <td style={{ border: '1px solid #333', padding: '4px 5px', width: '48%', verticalAlign: 'top' }}>
-                        <div style={{ marginBottom: 5 }}>
-                          <span style={{ fontWeight: 'bold' }}>Modell: </span>
-                          <span style={{ borderBottom: '1px solid #333', display: 'inline-block', minWidth: 120 }}>{model.modelName}</span>
+                    <tr style={{ verticalAlign: 'top' }}>
+
+                      {/* ── LINKE SPALTE ── */}
+                      <td style={{ border: S, padding: '4px 5px', width: '46%', verticalAlign: 'top' }}>
+
+                        {/* Modell */}
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginBottom: 3 }}>
+                          <b>Modell:</b>
+                          <span style={{ flex: 1, borderBottom: S, paddingBottom: 1 }}>{model.modelName}</span>
                         </div>
-                        <div style={{ marginBottom: 5 }}>
-                          <span style={{ fontWeight: 'bold' }}>Herkunft: </span>
-                          <span style={{ borderBottom: '1px solid #333', display: 'inline-block', minWidth: 140 }} />
+                        {/* Herkunft */}
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginBottom: 3 }}>
+                          <b>Herkunft :</b>
+                          <span style={{ flex: 1, borderBottom: S, paddingBottom: 1 }} />
                         </div>
-                        <div style={{ marginBottom: 5 }}>
-                          <span style={{ fontWeight: 'bold' }}>Masch.-Nr.: </span>
-                          <span style={{ borderBottom: '1px solid #333', display: 'inline-block', minWidth: 120 }}>
-                            {request.machineSerialNumber ?? ''}
-                          </span>
+                        {/* Masch.-Nr. */}
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginBottom: 3 }}>
+                          <b>Masch.-Nr.:</b>
+                          <span style={{ flex: 1, borderBottom: S, paddingBottom: 1 }}>{request.machineSerialNumber ?? ''}</span>
                         </div>
 
-                        {/* Kunde block */}
-                        <div style={{ marginBottom: 5 }}>
-                          <div><span style={{ fontWeight: 'bold' }}>Kunde: </span></div>
-                          <div style={{ borderBottom: '1px solid #333', minHeight: 14, paddingLeft: 4 }}>{customer.companyName}</div>
-                          <div style={{ borderBottom: '1px solid #333', minHeight: 14, paddingLeft: 4 }}>{site.street}</div>
-                          <div style={{ borderBottom: '1px solid #333', minHeight: 14, paddingLeft: 4 }}>{site.zip} {site.city}</div>
-                          <div style={{ borderBottom: '1px solid #333', minHeight: 14, paddingLeft: 4 }}>{site.contactPerson ?? ''}</div>
+                        {/* Kunde */}
+                        <div style={{ marginBottom: 3 }}>
+                          <b>Kunde :</b>
+                          {[cust.companyName, site.street, `${site.zip} ${site.city}`, site.contactPerson ?? ''].map((line, i) => (
+                            <div key={i} style={{ borderBottom: S, minHeight: 14, paddingLeft: 2, marginTop: 1 }}>{line}</div>
+                          ))}
                         </div>
 
-                        <div style={{ marginBottom: 5 }}>
-                          <span style={{ fontWeight: 'bold' }}>Tel.: </span>
-                          <span style={{ borderBottom: '1px solid #333', display: 'inline-block', minWidth: 130 }}>{customer.phone ?? ''}</span>
+                        {/* Tel. */}
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginBottom: 3 }}>
+                          <b>Tel.:</b>
+                          <span style={{ flex: 1, borderBottom: S, paddingBottom: 1 }}>{cust.phone ?? ''}</span>
                         </div>
-                        <div style={{ marginBottom: 8 }}>
-                          <span style={{ fontWeight: 'bold' }}>Rücknahme Modell: </span>
-                          <span style={{ borderBottom: '1px solid #333', display: 'inline-block', minWidth: 100 }} />
+                        {/* Rücknahme */}
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginBottom: 6 }}>
+                          <b>Rücknahme Modell:</b>
+                          <span style={{ flex: 1, borderBottom: S, paddingBottom: 1 }} />
                         </div>
 
                         {/* Zähler */}
-                        <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: 6, fontSize: 9 }}>
+                        <table style={{ marginBottom: 5, fontSize: 9 }}>
                           <tbody>
                             <tr>
-                              <td style={{ border: '1px solid #888', padding: '2px 3px', fontWeight: 'bold' }} colSpan={2}>Gesamt-Zähler ALT:</td>
+                              <td colSpan={2} style={{ border: SL, padding: '2px 3px', fontWeight: 'bold' }}>Gesamt - Zähler ALT:</td>
                             </tr>
                             <tr>
-                              <td style={{ border: '1px solid #888', padding: '2px 3px' }}><span style={{ fontWeight: 'bold' }}>Schwarz ALT:</span></td>
-                              <td style={{ border: '1px solid #888', padding: '2px 3px' }}><span style={{ fontWeight: 'bold' }}>Farbe ALT:</span></td>
+                              <td style={{ border: SL, padding: '2px 3px', width: '50%' }}><b>Schwarz ALT:</b></td>
+                              <td style={{ border: SL, padding: '2px 3px' }}><b>Farbe ALT:</b></td>
                             </tr>
                             <tr>
-                              <td style={{ border: '1px solid #888', padding: '2px 3px', fontWeight: 'bold' }} colSpan={2}>Gesamt-Zähler NEU:</td>
+                              <td colSpan={2} style={{ border: SL, padding: '2px 3px', fontWeight: 'bold' }}>Gesamt - Zähler NEU:</td>
                             </tr>
                             <tr>
-                              <td style={{ border: '1px solid #888', padding: '2px 3px' }}><span style={{ fontWeight: 'bold' }}>Schwarz NEU:</span></td>
-                              <td style={{ border: '1px solid #888', padding: '2px 3px' }}><span style={{ fontWeight: 'bold' }}>Farbe NEU:</span></td>
+                              <td style={{ border: SL, padding: '2px 3px' }}><b>Schwarz NEU:</b></td>
+                              <td style={{ border: SL, padding: '2px 3px' }}><b>Farbe Neu:</b></td>
                             </tr>
                           </tbody>
                         </table>
 
-                        {/* Ersatzteil Tabelle links */}
-                        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 9 }}>
+                        {/* Ersatzteil-Tabelle links – vorausgefüllt mit Zubehör aus dem Auftrag */}
+                        <table style={{ fontSize: 9 }}>
                           <thead>
                             <tr>
-                              <th style={{ border: '1px solid #333', padding: '2px 3px', width: '18%' }}>Menge</th>
-                              <th style={{ border: '1px solid #333', padding: '2px 3px' }}>Ersatzteil</th>
-                              <th style={{ border: '1px solid #333', padding: '2px 3px', width: '28%' }}>Artikel-Nr.</th>
+                              <th style={{ border: S, padding: '2px 3px', width: '15%' }}>Menge</th>
+                              <th style={{ border: S, padding: '2px 3px' }}>Ersatzteil</th>
+                              <th style={{ border: S, padding: '2px 3px', width: '28%' }}>Artikel-Nr.</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {Array.from({ length: 12 }).map((_, i) => (
+                            {Array.from({ length: leftRows }).map((_, i) => {
+                              const a = accs[i];
+                              return (
+                                <tr key={i}>
+                                  <td style={{ border: S, padding: '2px 3px', height: 14 }}>{a ? a.quantity : ''}</td>
+                                  <td style={{ border: S, padding: '2px 3px', height: 14 }}>
+                                    {a ? `${a.accessory.code ? a.accessory.code + ' ' : ''}${a.accessory.name}` : ''}
+                                  </td>
+                                  <td style={{ border: S, padding: '2px 3px', height: 14 }}>{a?.serialNumber ?? ''}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </td>
+
+                      {/* ── RECHTE SPALTE ── */}
+                      <td style={{ border: S, padding: '4px 5px', verticalAlign: 'top' }}>
+
+                        {/* V.-Beginn / Verkauft / KD.NR / geprüft */}
+                        <table style={{ marginBottom: 4, fontSize: 9 }}>
+                          <tbody>
+                            <tr>
+                              <td style={{ border: SL, padding: '2px 3px', width: '65%' }}>
+                                <b>Verkauft :</b>&nbsp;
+                                <span style={{ borderBottom: SL, display: 'inline-block', width: 50 }} />
+                              </td>
+                              <td style={{ border: SL, padding: '2px 3px' }}><b>V.-Beginn</b></td>
+                            </tr>
+                            <tr>
+                              <td style={{ border: SL, padding: '2px 3px' }}><b>geprüft:</b></td>
+                              <td style={{ border: SL, padding: '2px 3px' }}><b>KD.NR:</b> {cust.customerNumber}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+
+                        {/* Checkboxen */}
+                        {[
+                          ['Rebuild', 'Kopierfähig', 'Neuinstal.'],
+                          ['Kauf :', 'CA :', 'Vorführung:'],
+                          ['Miete:', 'CP :', 'Probestellung:'],
+                        ].map((row, ri) => (
+                          <div key={ri} style={{ display: 'flex', gap: 14, marginBottom: 4, alignItems: 'center' }}>
+                            {row.map((l) => (
+                              <span key={l} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 'bold', fontSize: 9 }}>
+                                {l} <Cb />
+                              </span>
+                            ))}
+                          </div>
+                        ))}
+
+                        {/* Zubehör-Tabelle – Standard-Liste, leer (manuell ausfüllen) */}
+                        <table style={{ fontSize: 9, marginBottom: 4 }}>
+                          <thead>
+                            <tr>
+                              <th style={{ border: S, padding: '2px 3px', width: '32%', fontWeight: 'bold' }}>Zubehör:</th>
+                              <th style={{ border: S, padding: '2px 3px', fontWeight: 'bold' }}>TYP/Modell</th>
+                              <th style={{ border: S, padding: '2px 3px', fontWeight: 'bold' }}>Maschinenummer</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {STANDARD_ZUBEHOER.map((label, i) => (
                               <tr key={i}>
-                                <td style={{ border: '1px solid #333', padding: '2px 3px', height: 14 }}>{ersatzteile[i]?.menge ?? ''}</td>
-                                <td style={{ border: '1px solid #333', padding: '2px 3px', height: 14 }}>{ersatzteile[i]?.name ?? ''}</td>
-                                <td style={{ border: '1px solid #333', padding: '2px 3px', height: 14 }}>{ersatzteile[i]?.artikelNr ?? ''}</td>
+                                <td style={{ border: S, padding: '1px 3px', height: 13 }}>
+                                  {label && (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, whiteSpace: 'pre-line', fontSize: 8 }}>
+                                      <span style={{ fontSize: 8 }}>{label}</span>&nbsp;<Cb />
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ border: S, padding: '1px 3px', height: 13 }} />
+                                <td style={{ border: S, padding: '1px 3px', height: 13 }} />
                               </tr>
                             ))}
                           </tbody>
                         </table>
-                      </td>
 
-                      {/* RIGHT COLUMN */}
-                      <td style={{ border: '1px solid #333', padding: '4px 5px', verticalAlign: 'top' }}>
-
-                        {/* V.-Beginn / Verkauft / KD.NR / geprüft */}
-                        <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: 5, fontSize: 9 }}>
-                          <tbody>
-                            <tr>
-                              <td style={{ border: '1px solid #888', padding: '2px 3px', width: '60%' }}>
-                                <span style={{ fontWeight: 'bold' }}>Verkauft:</span>
-                                <span style={{ borderBottom: '1px solid #888', display: 'inline-block', width: 60 }} />
-                              </td>
-                              <td style={{ border: '1px solid #888', padding: '2px 3px' }}>
-                                <span style={{ fontWeight: 'bold' }}>V.-Beginn:</span>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td style={{ border: '1px solid #888', padding: '2px 3px' }}>
-                                <span style={{ fontWeight: 'bold' }}>geprüft:</span>
-                              </td>
-                              <td style={{ border: '1px solid #888', padding: '2px 3px' }}>
-                                <span style={{ fontWeight: 'bold' }}>KD.NR:</span> {customer.customerNumber}
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-
-                        {/* Checkboxen Zeile 1 */}
-                        <div style={{ display: 'flex', gap: 10, marginBottom: 4, fontSize: 10 }}>
-                          {['Rebuild', 'Kopierfähig', 'Neuinstal.'].map((l) => (
-                            <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                              <span style={{ display: 'inline-block', width: 12, height: 12, border: '1px solid #333', flexShrink: 0 }} />
-                              <span style={{ fontWeight: 'bold' }}>{l}</span>
-                            </span>
-                          ))}
+                        {/* Technikünterstützung */}
+                        <div style={{ fontSize: 9, marginBottom: 2 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <b>Technikünterstützung für Installation erforderlich</b>&nbsp;<Cb />
+                          </span>
                         </div>
-
-                        {/* Checkboxen Zeile 2 */}
-                        <div style={{ display: 'flex', gap: 10, marginBottom: 4, fontSize: 10 }}>
-                          {['Kauf', 'CA', 'Vorführung'].map((l) => (
-                            <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                              <span style={{ display: 'inline-block', width: 12, height: 12, border: '1px solid #333', flexShrink: 0 }} />
-                              <span style={{ fontWeight: 'bold' }}>{l}:</span>
-                            </span>
-                          ))}
+                        <div style={{ fontSize: 9, marginBottom: 2 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            gegen Berechnung laut Vertrag und Anlage/n&nbsp;<Cb />
+                          </span>
                         </div>
-
-                        {/* Checkboxen Zeile 3 */}
-                        <div style={{ display: 'flex', gap: 10, marginBottom: 6, fontSize: 10 }}>
-                          {['Miete', 'CP', 'Probestellung'].map((l) => (
-                            <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                              <span style={{ display: 'inline-block', width: 12, height: 12, border: '1px solid #333', flexShrink: 0 }} />
-                              <span style={{ fontWeight: 'bold' }}>{l}:</span>
-                            </span>
-                          ))}
-                        </div>
-
-                        {/* Zubehör Tabelle */}
-                        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 9, marginBottom: 5 }}>
-                          <thead>
-                            <tr>
-                              <th style={{ border: '1px solid #333', padding: '2px 3px', width: '38%', fontWeight: 'bold' }}>Zubehör</th>
-                              <th style={{ border: '1px solid #333', padding: '2px 3px', fontWeight: 'bold' }}>TYP/Modell</th>
-                              <th style={{ border: '1px solid #333', padding: '2px 3px', fontWeight: 'bold' }}>Masch.-Nr.</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {STANDARD_ZUBEHOER.map((label, i) => {
-                              const checked = label ? matchStd(label) : false;
-                              const matchedAcc = label ? request.accessories.find((a) =>
-                                a.accessory.name.toLowerCase().includes(label.toLowerCase().split(/[\s/]/)[0].toLowerCase())
-                              ) : undefined;
-                              return (
-                                <tr key={i}>
-                                  <td style={{ border: '1px solid #333', padding: '2px 3px', height: 13 }}>
-                                    {label && (
-                                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                                        <span style={{
-                                          display: 'inline-block', width: 10, height: 10,
-                                          border: '1px solid #333', flexShrink: 0,
-                                          backgroundColor: checked ? '#333' : 'white',
-                                        }} />
-                                        <span style={{ fontSize: 8 }}>{label}</span>
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td style={{ border: '1px solid #333', padding: '2px 3px', height: 13, fontSize: 8 }}>
-                                    {matchedAcc?.accessory.code ?? ''}
-                                  </td>
-                                  <td style={{ border: '1px solid #333', padding: '2px 3px', height: 13, fontSize: 8 }}>
-                                    {matchedAcc?.serialNumber ?? ''}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-
-                        {/* Technikunterstützung */}
-                        <div style={{ fontSize: 9, marginBottom: 3 }}>
-                          <span style={{ display: 'inline-block', width: 11, height: 11, border: '1px solid #333', verticalAlign: 'middle' }} />
-                          &nbsp;<span style={{ fontWeight: 'bold' }}>Technikünterstützung für Installation erforderlich</span>
-                        </div>
-                        <div style={{ fontSize: 9, marginBottom: 3 }}>
-                          <span style={{ display: 'inline-block', width: 11, height: 11, border: '1px solid #333', verticalAlign: 'middle' }} />
-                          &nbsp;gegen Berechnung laut Vertrag und Anlage/n
-                        </div>
-                        <div style={{ fontSize: 9, marginBottom: 6 }}>
+                        <div style={{ fontSize: 9, marginBottom: 5 }}>
                           ohne Berechnung laut Vertrag bis zu&nbsp;
-                          <span style={{ borderBottom: '1px solid #333', display: 'inline-block', width: 30 }} />&nbsp;Stunden
+                          <span style={{ borderBottom: S, display: 'inline-block', width: 30 }} />&nbsp;Stunden
                         </div>
 
-                        {/* Ersatzteil Tabelle rechts */}
-                        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 9 }}>
+                        {/* Ersatzteil-Tabelle rechts – leer, manuell */}
+                        <table style={{ fontSize: 9 }}>
                           <thead>
                             <tr>
-                              <th style={{ border: '1px solid #333', padding: '2px 3px', width: '18%' }}>Menge</th>
-                              <th style={{ border: '1px solid #333', padding: '2px 3px' }}>Ersatzteil</th>
-                              <th style={{ border: '1px solid #333', padding: '2px 3px', width: '28%' }}>Artikel-Nr.</th>
+                              <th style={{ border: S, padding: '2px 3px', width: '15%' }}>Menge</th>
+                              <th style={{ border: S, padding: '2px 3px' }}>Ersatzteil</th>
+                              <th style={{ border: S, padding: '2px 3px', width: '28%' }}>Artikel-Nr.</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {Array.from({ length: 8 }).map((_, i) => {
-                              const idx = i + 12;
-                              return (
-                                <tr key={i}>
-                                  <td style={{ border: '1px solid #333', padding: '2px 3px', height: 14 }}>{ersatzteile[idx]?.menge ?? ''}</td>
-                                  <td style={{ border: '1px solid #333', padding: '2px 3px', height: 14 }}>{ersatzteile[idx]?.name ?? ''}</td>
-                                  <td style={{ border: '1px solid #333', padding: '2px 3px', height: 14 }}>{ersatzteile[idx]?.artikelNr ?? ''}</td>
-                                </tr>
-                              );
-                            })}
+                            {Array.from({ length: 10 }).map((_, i) => (
+                              <tr key={i}>
+                                <td style={{ border: S, padding: '2px 3px', height: 14 }} />
+                                <td style={{ border: S, padding: '2px 3px', height: 14 }} />
+                                <td style={{ border: S, padding: '2px 3px', height: 14 }} />
+                              </tr>
+                            ))}
                           </tbody>
                         </table>
-
-                        {/* Fax */}
-                        <div style={{ marginTop: 6, borderTop: '1px solid #333', paddingTop: 4 }}>
-                          <div style={{ display: 'flex', gap: 10, fontSize: 9, marginBottom: 3 }}>
-                            <span><span style={{ fontWeight: 'bold' }}>Faxnummer:</span> <span style={{ borderBottom: '1px solid #333', display: 'inline-block', width: 70 }} /></span>
-                            <span><span style={{ fontWeight: 'bold' }}>Kopfzeile:</span> <span style={{ borderBottom: '1px solid #333', display: 'inline-block', width: 70 }} /></span>
-                          </div>
-                          <div style={{ display: 'flex', gap: 8, fontSize: 8 }}>
-                            <span>Hauptanschluss <span style={{ display: 'inline-block', width: 10, height: 10, border: '1px solid #333', verticalAlign: 'middle' }} /></span>
-                            <span>Amtsholung: <span style={{ borderBottom: '1px solid #333', display: 'inline-block', width: 40 }} /></span>
-                            <span>TAE <span style={{ display: 'inline-block', width: 10, height: 10, border: '1px solid #333', verticalAlign: 'middle' }} /></span>
-                            <span>Western <span style={{ display: 'inline-block', width: 10, height: 10, border: '1px solid #333', verticalAlign: 'middle' }} /></span>
-                            <span>Sendebericht: <span style={{ borderBottom: '1px solid #333', display: 'inline-block', width: 30 }} /></span>
-                          </div>
-                        </div>
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
-              {/* ═══════════════════════════════════════════════════════ PAGE 2 ═══ */}
-              <div style={{ width: '190mm', padding: '6mm', fontFamily: 'Arial, sans-serif', fontSize: 10, color: '#000', pageBreakBefore: 'always' }}>
+              {/* ══════════════════ SEITE 2 ══════════════════ */}
+              <div className="page2" style={{ width: '190mm', padding: '5mm', pageBreakBefore: 'always' }}>
 
-                {/* Kopfzeile Seite 2 */}
-                <div style={{ textAlign: 'right', fontSize: 9, marginBottom: 4 }}>
-                  Anforderung Nr. {request.requestNumber} · {customer.companyName} · {model.modelName}
-                </div>
+                {/* Fax-Box */}
+                <table style={{ marginBottom: 4, fontSize: 9 }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ border: S, padding: '3px 5px', width: '50%' }}>
+                        <b>Faxnummer:</b>&nbsp;
+                        <span style={{ borderBottom: S, display: 'inline-block', width: 80 }} />
+                      </td>
+                      <td style={{ border: S, padding: '3px 5px' }}>
+                        <b>Kopfzeile:</b>&nbsp;
+                        <span style={{ borderBottom: S, display: 'inline-block', width: 100 }} />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colSpan={2} style={{ border: S, padding: '3px 5px' }}>
+                        <span style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 8, flexWrap: 'wrap' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>Hauptanschluß <Cb /></span>
+                          <span>Amtsholung: <span style={{ borderBottom: S, display: 'inline-block', width: 40 }} /></span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>TAE <Cb /></span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>Western <Cb /></span>
+                          <span>Sendebericht: <span style={{ borderBottom: S, display: 'inline-block', width: 35 }} /></span>
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
                 {/* Fortsetzung Ersatzteile */}
-                <div style={{ fontWeight: 'bold', fontSize: 10, marginBottom: 3, borderBottom: '2px solid #333' }}>
-                  Fortsetzung Ersatzteile
-                </div>
-                <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 9, marginBottom: 8 }}>
+                <table style={{ marginBottom: 1, fontSize: 9 }}>
                   <thead>
                     <tr>
-                      <th style={{ border: '1px solid #333', padding: '2px 3px', width: '10%' }}>Menge</th>
-                      <th style={{ border: '1px solid #333', padding: '2px 3px', width: '35%' }}>Ersatzteil</th>
-                      <th style={{ border: '1px solid #333', padding: '2px 3px', width: '20%' }}>Artikelnummer</th>
-                      <th style={{ border: '1px solid #333', padding: '2px 3px', width: '10%' }}>Menge</th>
-                      <th style={{ border: '1px solid #333', padding: '2px 3px', width: '35%' }}>Ersatzteil</th>
-                      <th style={{ border: '1px solid #333', padding: '2px 3px', width: '20%' }}>Artikelnummer</th>
+                      <th colSpan={6} style={{ border: S, padding: '3px 5px', background: '#f0f0f0', textAlign: 'left', fontWeight: 'bold', fontSize: 10 }}>
+                        Fortsetzung Ersatzteile
+                      </th>
+                    </tr>
+                    <tr>
+                      <th style={{ border: S, padding: '2px 3px', width: '7%' }}>Menge</th>
+                      <th style={{ border: S, padding: '2px 3px', width: '30%' }}>Ersatzteil</th>
+                      <th style={{ border: S, padding: '2px 3px', width: '13%' }}>Artikelnummer</th>
+                      <th style={{ border: S, padding: '2px 3px', width: '7%' }}>Menge</th>
+                      <th style={{ border: S, padding: '2px 3px', width: '30%' }}>Ersatzteil</th>
+                      <th style={{ border: S, padding: '2px 3px' }}>Artikelnummer</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Array.from({ length: 12 }).map((_, i) => (
                       <tr key={i}>
-                        {[0, 1].map((col) => {
-                          const idx = i + (col * 12) + 20;
-                          return (
-                            <>
-                              <td key={`${i}-${col}-m`} style={{ border: '1px solid #333', padding: '2px 3px', height: 14 }}>{ersatzteile[idx]?.menge ?? ''}</td>
-                              <td key={`${i}-${col}-n`} style={{ border: '1px solid #333', padding: '2px 3px', height: 14 }}>{ersatzteile[idx]?.name ?? ''}</td>
-                              <td key={`${i}-${col}-a`} style={{ border: '1px solid #333', padding: '2px 3px', height: 14 }}>{ersatzteile[idx]?.artikelNr ?? ''}</td>
-                            </>
-                          );
-                        })}
+                        {[0, 1, 2, 3, 4, 5].map((c) => (
+                          <td key={c} style={{ border: S, padding: '2px 3px', height: 15 }} />
+                        ))}
                       </tr>
                     ))}
                   </tbody>
                 </table>
 
                 {/* Prüfliste */}
-                <div style={{ fontWeight: 'bold', fontSize: 10, marginBottom: 3, borderBottom: '2px solid #333' }}>
-                  Prüfliste – Vom Techniker auszufüllen
-                </div>
-                <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 9, marginBottom: 8 }}>
+                <table style={{ marginBottom: 4, fontSize: 9 }}>
+                  <thead>
+                    <tr>
+                      <th colSpan={4} style={{ border: S, padding: '3px 5px', background: '#f0f0f0', textAlign: 'left', fontWeight: 'bold', fontSize: 10 }}>
+                        Prüfliste - Vom Techniker auszufüllen
+                      </th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {PRUFLISTE_LEFT.map((item, i) => (
                       <tr key={i}>
-                        <td style={{ border: '1px solid #ccc', padding: '2px 4px', height: 14, width: '43%' }}>
+                        <td style={{ border: SL, padding: '2px 4px', height: 15, width: '43%' }}>
                           {item && (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span style={{ display: 'inline-block', width: 10, height: 10, border: '1px solid #333', flexShrink: 0 }} />
-                              <span style={{ fontWeight: item.includes('gelöscht') ? 'bold' : 'normal' }}>{item}</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ fontSize: 9, fontWeight: item.startsWith('Kundendaten') ? 'bold' : 'normal' }}>{item}</span>
                             </span>
                           )}
                         </td>
-                        <td style={{ border: '1px solid #ccc', padding: '2px 4px', height: 14 }}>
-                          {PRUFLISTE_RIGHT[i] && (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span style={{ display: 'inline-block', width: 10, height: 10, border: '1px solid #333', flexShrink: 0 }} />
-                              <span>{PRUFLISTE_RIGHT[i]}</span>
-                            </span>
-                          )}
+                        <td style={{ border: SL, padding: '2px 4px', height: 15, width: '7%', textAlign: 'center' }}>
+                          {item && <Cb />}
+                        </td>
+                        <td style={{ border: SL, padding: '2px 4px', height: 15, width: '43%' }}>
+                          {PRUFLISTE_RIGHT[i] && <span style={{ fontSize: 9 }}>{PRUFLISTE_RIGHT[i]}</span>}
+                        </td>
+                        <td style={{ border: SL, padding: '2px 4px', height: 15, width: '7%', textAlign: 'center' }}>
+                          {PRUFLISTE_RIGHT[i] && <Cb />}
                         </td>
                       </tr>
                     ))}
@@ -521,37 +477,40 @@ export default function MachinenanforderungPrint({ request, onClose }: Props) {
                 </table>
 
                 {/* Datum / Einheiten */}
-                <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 9, marginBottom: 5 }}>
+                <table style={{ fontSize: 9, marginBottom: 4 }}>
                   <tbody>
-                    {['', '', '', ''].map((_, i) => (
+                    {[
+                      ['Fertigstellung und Prüfliste abgearbeitet.', true],
+                      ['Techniker/Datum', true],
+                      ['', false],
+                      ['', false],
+                    ].map(([label, bold], i) => (
                       <tr key={i}>
-                        <td style={{ border: '1px solid #888', padding: '2px 5px', width: '15%' }}>Datum:</td>
-                        <td style={{ border: '1px solid #888', padding: '2px 5px', width: '30%' }} />
-                        <td style={{ border: '1px solid #888', padding: '2px 5px', width: '15%' }}>Einheiten</td>
-                        <td style={{ border: '1px solid #888', padding: '2px 5px' }}>
-                          {i === 0 && <strong>Fertigstellung und Prüfliste abgearbeitet.</strong>}
-                          {i === 1 && <strong>Techniker/Datum</strong>}
+                        <td style={{ border: SL, padding: '2px 5px', width: '12%' }}><b>Datum:</b></td>
+                        <td style={{ border: SL, padding: '2px 5px', width: '26%' }} />
+                        <td style={{ border: SL, padding: '2px 5px', width: '12%' }}><b>Einheiten</b></td>
+                        <td style={{ border: SL, padding: '2px 5px' }}>
+                          {label && <span style={{ fontWeight: bold ? 'bold' : 'normal' }}>{label as string}</span>}
                         </td>
                       </tr>
                     ))}
                     <tr>
-                      <td colSpan={2} style={{ border: '1px solid #888', padding: '2px 5px', fontWeight: 'bold' }}>Zeit Gesamt (Einheiten)</td>
-                      <td colSpan={2} style={{ border: '1px solid #888', padding: '2px 5px' }} />
+                      <td colSpan={2} style={{ border: SL, padding: '2px 5px', fontWeight: 'bold' }}>Zeit Gesammt (Einheiten)</td>
+                      <td colSpan={2} style={{ border: SL, padding: '2px 5px' }} />
                     </tr>
                   </tbody>
                 </table>
 
                 {/* Abnahme / Netzwerkanalyse */}
-                <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 9 }}>
+                <table style={{ fontSize: 9 }}>
                   <tbody>
                     <tr>
-                      <td style={{ border: '2px solid #333', padding: '4px 5px', fontWeight: 'bold', width: '50%' }}>
+                      <td style={{ border: '2px solid #333', padding: '10px 5px', fontWeight: 'bold', width: '45%' }}>
                         Abnahme: Datum, Unterschrift
                       </td>
                       <td style={{ border: '2px solid #333', padding: '4px 5px' }}>
-                        <span style={{ fontWeight: 'bold' }}>Netzwerkanalysebogen vorhanden:</span>&nbsp;
-                        Ja <span style={{ display: 'inline-block', width: 12, height: 12, border: '1px solid #333', verticalAlign: 'middle' }} />&nbsp;
-                        <span style={{ fontWeight: 'bold' }}>Nein</span> <span style={{ display: 'inline-block', width: 12, height: 12, border: '1px solid #333', verticalAlign: 'middle' }} />
+                        <b>Netzwerkanalysebogen vorhanden: Ja</b>&nbsp;<Cb />&nbsp;&nbsp;
+                        <b>Nein</b>&nbsp;<Cb />
                       </td>
                     </tr>
                   </tbody>
@@ -565,8 +524,3 @@ export default function MachinenanforderungPrint({ request, onClose }: Props) {
     </>
   );
 }
-
-// Suppress unused variable warnings for the simple helper components
-void Checkbox;
-void Field;
-void Row;
