@@ -50,7 +50,7 @@ export default function OfflineBanner() {
               accessories: m.accessories,
             });
             if (!order.asDraft) {
-              await api.machineRequests.transition(req.id, { toStatus: 'SUBMITTED' });
+              await api.machineRequests.transition(req.id, { toStatus: 'PENDING_APPROVAL' });
             }
           }
           removeOrderFromQueue(order.id);

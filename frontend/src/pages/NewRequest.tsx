@@ -465,7 +465,7 @@ export default function NewRequest() {
           accessories: m.accessories.map((a) => ({ accessoryId: a.accessoryId, quantity: a.quantity })),
         });
         if (!asDraft) {
-          await api.machineRequests.transition(req.id, { toStatus: 'SUBMITTED' });
+          await api.machineRequests.transition(req.id, { toStatus: 'PENDING_APPROVAL' });
         }
         createdIds.push(req.id);
       }
