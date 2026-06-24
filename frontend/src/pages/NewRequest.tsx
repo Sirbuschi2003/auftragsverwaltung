@@ -601,8 +601,8 @@ export default function NewRequest() {
                   <p className="text-sm font-semibold text-blue-900 dark:text-blue-300">
                     Neuen Kunden anlegen — Nr. <span className="font-mono">{customerNumber}</span>
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="col-span-1 sm:col-span-2">
                       <label className="label">Firmenname *</label>
                       <input className="input" placeholder="Muster GmbH" value={newCustomerForm.companyName}
                         onChange={(e) => setNewCustomerForm((p) => ({ ...p, companyName: e.target.value }))} />
@@ -776,7 +776,7 @@ export default function NewRequest() {
               {filteredModels.length === 0 ? (
                 <p className="text-sm text-gray-400 dark:text-slate-500 italic py-4 text-center">Keine Modelle gefunden.</p>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {filteredModels.map((m) => {
                     const addedCount = machines.filter((e) => e.model.id === m.id).length;
                     return (
@@ -901,7 +901,7 @@ export default function NewRequest() {
             </div>
             <div className="card-body space-y-5">
               {/* Customer & Site */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1">Kunde</p>
                   <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{customer?.companyName}</p>

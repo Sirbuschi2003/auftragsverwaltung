@@ -90,7 +90,7 @@ function UsersTab() {
 
       {editing && (
         <Modal title={isNew ? 'Neuer Benutzer' : 'Benutzer bearbeiten'} onClose={() => { setEditing(null); setError(''); }}>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="label">Vorname</label>
               <input className="input" value={(editing as any).firstName || ''} onChange={(e) => setEditing((p) => ({ ...p, firstName: e.target.value }))} />
@@ -136,8 +136,8 @@ function UsersTab() {
         </button>
       </div>
 
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="card overflow-hidden overflow-x-auto">
+        <table className="w-full text-sm min-w-[500px]">
           <thead className="bg-gray-50 dark:bg-slate-700/50">
             <tr>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Name</th>
@@ -227,7 +227,7 @@ function ModelsTab() {
 
       {editing && (
         <Modal title={isNew ? 'Neues Maschinenmodell' : 'Modell bearbeiten'} onClose={() => setEditing(null)}>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="label">Hersteller</label>
               <input className="input" placeholder="z.B. Toshiba, Ricoh…" value={(editing as any).manufacturer || ''} onChange={(e) => setEditing((p) => ({ ...p, manufacturer: e.target.value }))} />
@@ -281,7 +281,7 @@ function ModelsTab() {
 
           {/* Image uploads — only shown when editing existing model */}
           {!isNew && editing.id && (
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100 dark:border-slate-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-gray-100 dark:border-slate-700">
               <div>
                 <label className="label">Produktbild</label>
                 {editing.imagePath && (
@@ -419,7 +419,7 @@ function AccessoriesTab() {
 
       {editing && (
         <Modal title={isNew ? 'Neues Zubehör' : 'Zubehör bearbeiten'} onClose={() => { setEditing(null); setError(''); }}>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="label">Bezeichnung / Code (z.B. MR-3033)</label>
               <input className="input font-mono" placeholder="z.B. MR-3033, DESK-5005" value={editing.code || ''} onChange={(e) => setEditing((p) => ({ ...p, code: e.target.value }))} />
@@ -730,8 +730,8 @@ function SiteForm({ site, onSave, onCancel }: { site: Partial<CustomerSite>; onS
 
   return (
     <div className="bg-gray-50 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-600 rounded-lg p-4 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="col-span-1 sm:col-span-2">
           <label className="label">Standortname *</label>
           <input className="input" placeholder="z.B. Hauptsitz, Filiale Nord…" value={form.siteName || ''} onChange={(e) => set('siteName', e.target.value)} />
         </div>
@@ -863,7 +863,7 @@ function CustomersTab() {
       {editingCustomer && isNew && (
         <div className="card p-5 space-y-3">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Neuer Kunde</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="label">Kundennummer *</label>
               <input className="input" value={editingCustomer.customerNumber || ''} onChange={(e) => setEditingCustomer((p) => ({ ...p, customerNumber: e.target.value }))} />
@@ -889,8 +889,8 @@ function CustomersTab() {
         </div>
       )}
 
-      <div className="card overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="card overflow-hidden overflow-x-auto">
+        <table className="w-full text-sm min-w-[560px]">
           <thead className="bg-gray-50 dark:bg-slate-700/50">
             <tr>
               <th className="w-8" />

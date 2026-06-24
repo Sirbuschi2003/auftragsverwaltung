@@ -458,7 +458,7 @@ export default function RequestDetail() {
   const canDelete = user && (user.role === 'ADMIN' || (request.status === 'DRAFT' && request.salesRep.id === user.id));
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-4 sm:space-y-6">
       {/* Delete confirmation dialog */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -482,41 +482,43 @@ export default function RequestDetail() {
 
       {/* Header */}
       <div className="flex items-start gap-3">
-        <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 transition-colors mt-1">
+        <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 transition-colors mt-1 flex-shrink-0">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-mono font-bold text-brand-600 bg-brand-50 px-2.5 py-1 rounded-lg">
               {request.requestNumber}
             </span>
             <StatusBadge status={request.status} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mt-1">{request.customer.companyName}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 mt-1 truncate">{request.customer.companyName}</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400">{request.machineModel.modelName}</p>
-        </div>
-        <div className="flex items-start gap-3">
-          <button
-            onClick={() => setShowPrint(true)}
-            className="flex items-center gap-1.5 text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 bg-brand-50 dark:bg-brand-600/15 hover:bg-brand-100 dark:hover:bg-brand-600/25 px-3 py-1.5 rounded-lg transition-colors font-medium border border-brand-100 dark:border-brand-500/30"
-            title="Maschinenanforderung drucken"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            Anforderung drucken
-          </button>
-          {canDelete && (
+          {/* Actions row – visible on all screen sizes */}
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             <button
-              onClick={() => setConfirmDelete(true)}
-              className="text-gray-400 hover:text-red-500 transition-colors p-1 mt-0.5"
-              title="Auftrag löschen"
+              onClick={() => setShowPrint(true)}
+              className="flex items-center gap-1.5 text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 bg-brand-50 dark:bg-brand-600/15 hover:bg-brand-100 dark:hover:bg-brand-600/25 px-3 py-1.5 rounded-lg transition-colors font-medium border border-brand-100 dark:border-brand-500/30"
+              title="Maschinenanforderung drucken"
             >
-              <Trash2 className="w-4 h-4" />
+              <Printer className="w-3.5 h-3.5" />
+              <span className="hidden xs:inline">Anforderung drucken</span>
+              <span className="xs:hidden">Drucken</span>
             </button>
-          )}
-          <div className="text-right text-xs text-gray-400 dark:text-slate-500">
-            <p>Erstellt {new Date(request.createdAt).toLocaleDateString('de-DE')}</p>
-            <p>von {request.salesRep.name}</p>
+            {canDelete && (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="text-gray-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20"
+                title="Auftrag löschen"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
+        </div>
+        <div className="text-right text-xs text-gray-400 dark:text-slate-500 flex-shrink-0 hidden sm:block">
+          <p>Erstellt {new Date(request.createdAt).toLocaleDateString('de-DE')}</p>
+          <p>von {request.salesRep.name}</p>
         </div>
       </div>
 
@@ -528,7 +530,7 @@ export default function RequestDetail() {
             <div className="card-header flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-900">Lieferadresse</h2>
             </div>
-            <div className="card-body grid grid-cols-2 gap-4">
+            <div className="card-body grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Kunde</p>
                 <p className="text-sm font-semibold text-gray-900">{request.customer.companyName}</p>
@@ -551,7 +553,7 @@ export default function RequestDetail() {
             <div className="card-header">
               <h2 className="text-sm font-semibold text-gray-900">Maschine</h2>
             </div>
-            <div className="card-body grid grid-cols-2 gap-4">
+            <div className="card-body grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Modell</p>
                 <p className="text-sm font-semibold text-gray-900">{request.machineModel.modelName}</p>
